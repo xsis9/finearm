@@ -11,10 +11,12 @@ dependencies = []
 # The daemon core and profiles are stdlib-only; robot arms that vendor a
 # Python SDK declare what their adapter needs here (panthera: none beyond stdlib).
 robot = ["pyyaml>=6"]
+infer = ["numpy>=2,<2.3", "opencv-python>=4.8", "websockets>=13", "msgpack>=1.1"]
 dev = ["pytest>=8", "ruff>=0.8"]
 
 [project.scripts]
 finearm-daemon = "finearm.arms.daemon.cli:main"
+finearm-infer = "finearm.infer.cli:main"
 
 # Phase 1: src-layout installable package (finearm.core only, stdlib deps).
 # Domain extras (robot/data/infer/rl) land with their phases per REFACTOR_PLAN.md.

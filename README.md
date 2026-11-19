@@ -18,6 +18,7 @@ inference, and RL post-training on top of pre-trained VLA policies
 | `RL/rlt_panthera/` | Online RL post-training (RL-Token): training loop, replay, learner, serving |
 | `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
 | `src/finearm/arms/` | Arm plugins: `ArmProfile` schema declaration + arm-neutral control daemon (`finearm-daemon --arm <id>`); `panthera_ht` (real) and `mock_twojoint` (extensibility demo) |
+| `src/finearm/infer/` | Model adapters (pi05 / lingbot / mock) + chunk executors: `RTCExecutor` (pipelined) and `StopAndGoExecutor`; `finearm-infer --exec-mode {rtc,stop-and-go}` |
 | `configs/` | Machine/arm/model configuration (canonical copies) |
 | `third_party/` | Upstream baseline records for vendored dependencies |
 | `doc/` | Working notes and hardware manuals |
@@ -77,6 +78,9 @@ python -m pytest tests/core/
 # Arms suite (profiles, mock daemon round-trip, legacy-shim equivalence)
 python -m pytest tests/arms/
 
+# Infer suite (executor math, RTC golden comparison vs pre-refactor, stop-and-go)
+python -m pytest tests/infer/
+
 # RL suite (requires: torch, numpy, pytest)
 cd RL/rlt_panthera && python -m pytest
 
@@ -84,7 +88,7 @@ cd RL/rlt_panthera && python -m pytest
 cd data/collect/panthera-lerobot-collect && python -m pytest tests/
 ```
 
-CI runs lint plus all four suites on every push (`.github/workflows/ci.yml`).
+CI runs lint plus all five suites on every push (`.github/workflows/ci.yml`).
 Hardware is never touched by CI or by the test suites.
 
 ## License
