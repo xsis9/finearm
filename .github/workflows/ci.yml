@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff==0.17.5
+      - run: ruff check .
+
+  rl-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install numpy pytest
+      - name: RL suite (rlt_panthera)
+        working-directory: RL/rlt_panthera
+        run: python -m pytest
+
+  data-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install lerobot==0.5.1 pytest
+      - run: pip install -e data/collect/panthera-lerobot-collect --no-deps
+      - name: Data-collection suite (panthera-lerobot-collect)
+        working-directory: data/collect/panthera-lerobot-collect
+        run: python -m pytest tests/

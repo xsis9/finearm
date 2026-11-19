@@ -1,0 +1,43 @@
+[project]
+name = "finearm"
+version = "0.1.0"
+description = "Robot-arm VLA fine-tuning framework: teleop data collection, real-time chunked inference, and RL post-training (pi0.5 / Panthera-HT)"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.8"]
+
+# Phase 0 bootstrap: virtual project (no package yet). src/finearm lands in later
+# phases per REFACTOR_PLAN.md; until then this file only carries tool config.
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+# Bootstrap gate: catch broken code only. The full rule set is tightened phase by
+# phase as modules move into src/finearm (REFACTOR_PLAN.md Phase 8).
+select = ["E4", "E7", "E9", "F"]
+ignore = [
+    "E401", # multiple imports on one line (cosmetic; legacy tests)
+    "E402", # import not at top: legacy sys.path-insert bootstrap pattern, reorganized in later phases
+    "F401", # unused imports: cleaned up when modules migrate (some are deliberate probe/re-export imports)
+    "F841", # unused locals: reviewed during module migration
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Known real bug (signal_handler NameError at import time), fix scheduled in
+# REFACTOR_PLAN.md Phase 5b. Tracked here so the gate stays green without
+# hiding it anywhere else.
+"RL/rlt_panthera/scripts/infer_stage2.py" = ["F821"]
+
+[tool.pytest.ini_options]
+# Machines that source ROS Humble leak launch_testing/ament pytest plugins into
+# every run and break pytest 9; disable them globally (same list as
+# RL/rlt_panthera/pytest.ini). Harmless on clean CI runners.
+addopts = "-p no:launch_testing -p no:launch_testing_ros -p no:launch_ros -p no:ament_copyright -p no:ament_flake8 -p no:ament_lint -p no:ament_pep257 -p no:ament_xmllint"

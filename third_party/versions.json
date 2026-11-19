@@ -1,0 +1,10 @@
+{
+  "comment": "Baseline records for vendored third-party trees. Vendored code itself is fetched separately (git-ignored); these records pin the upstream commit each local copy is based on, so later syncs/diffs against upstream are reproducible.",
+  "openpi": {
+    "upstream": "https://github.com/Physical-Intelligence/openpi",
+    "baseline_commit": "215abfb217dbac7d5f1273282331b9b1866c0479",
+    "local_path": "models/openpi",
+    "local_state": "pristine upstream checkout plus a local patch to packages/openpi-client/pyproject.toml",
+    "note": "The training machine holds the modified fork (panthera_policy, pi05_panthera_p3 config) that will become the canonical in-tree copy; sync deferred to a later refactor phase."
+  }
+}
