@@ -16,13 +16,49 @@ inference, and RL post-training on top of pre-trained VLA policies
 | `data/collect/panthera-lerobot-collect/` | LeRobot teleop data collection (robot + teleoperator plugins, CLI, tests) |
 | `infer/` | Real-time chunked inference client (RTC), model adapters, arm/camera interface |
 | `RL/rlt_panthera/` | Online RL post-training (RL-Token): training loop, replay, learner, serving |
+| `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
 | `configs/` | Machine/arm/model configuration (canonical copies) |
 | `third_party/` | Upstream baseline records for vendored dependencies |
 | `doc/` | Working notes and hardware manuals |
 
+## Running on any machine
+
+The repository stores **no machine identity** — no hostnames, no absolute
+paths, no per-machine profiles. Clone it anywhere and the built-in defaults
+follow the checkout. Per-machine customization uses three override layers,
+highest first:
+
+1. **CLI flags** (per invocation, e.g. `--stats_path`)
+2. **Environment variables** (e.g. `PANTHERA_ACQ_IFACE`, `PANTHERA_DATA_ROOT`, `FINEARM_STATS_PATH`)
+3. **`configs/local.jsonc`** — machine-local persistence, gitignored
+   (copy from [`configs/local.example.jsonc`](configs/local.example.jsonc))
+
+Layer 4 (lowest) is repo-relative defaults resolved by `finearm.core.paths`:
+`data/datasets` (dataset hub), `arm/panthera/sdk` (vendor SDK),
+`infer/robot_interface.py` (acquisition interface), `/tmp` (daemon socket
+dir). `FINEARM_ROOT` points at a checkout from an environment where the
+package is installed elsewhere.
+
+### Topologies
+
+- **Single machine (local inference)**: one Linux box with a CUDA GPU
+  (≥ 8 GB VRAM to serve π0.5 in bf16) runs the inference server, the arm
+  daemon, and the collection/RL clients together — everything defaults to
+  `127.0.0.1`.
+- **Split executor + inference server**: the arm-attached executor box runs
+  daemon/collection/RL; a GPU box serves the policy. Forward the port over
+  ssh (`ssh -N -L 8000:127.0.0.1:8000 <gpu-host>`) and keep
+  `server_host 127.0.0.1` — clients cannot tell the difference.
+
+`finearm.core` needs only a Python ≥ 3.11 standard library; heavier
+dependencies live in the per-domain environments (see each domain's README).
+
 ## Testing
 
 ```bash
+# Core suite (pure stdlib, no install needed)
+python -m pytest tests/core/
+
 # RL suite (requires: torch, numpy, pytest)
 cd RL/rlt_panthera && python -m pytest
 
@@ -30,7 +66,7 @@ cd RL/rlt_panthera && python -m pytest
 cd data/collect/panthera-lerobot-collect && python -m pytest tests/
 ```
 
-CI runs lint plus both suites on every push (`.github/workflows/ci.yml`).
+CI runs lint plus all three suites on every push (`.github/workflows/ci.yml`).
 Hardware is never touched by CI or by the test suites.
 
 ## License

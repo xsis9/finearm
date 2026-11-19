@@ -10,10 +10,14 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.8"]
 
-# Phase 0 bootstrap: virtual project (no package yet). src/finearm lands in later
-# phases per REFACTOR_PLAN.md; until then this file only carries tool config.
-[tool.uv]
-package = false
+# Phase 1: src-layout installable package (finearm.core only, stdlib deps).
+# Domain extras (robot/data/infer/rl) land with their phases per REFACTOR_PLAN.md.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/finearm"]
 
 [tool.ruff]
 line-length = 110
@@ -41,3 +45,5 @@ ignore = [
 # every run and break pytest 9; disable them globally (same list as
 # RL/rlt_panthera/pytest.ini). Harmless on clean CI runners.
 addopts = "-p no:launch_testing -p no:launch_testing_ros -p no:launch_ros -p no:ament_copyright -p no:ament_flake8 -p no:ament_lint -p no:ament_pep257 -p no:ament_xmllint"
+# Run tests/core (and future suites rooted here) without installing the package.
+pythonpath = ["src"]

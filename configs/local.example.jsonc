@@ -1,0 +1,24 @@
+// finearm machine-local overrides — copy to configs/local.jsonc (gitignored).
+//
+// Resolution order (highest first): CLI flags > environment variables >
+// this file > repo-relative defaults (see src/finearm/core/paths.py).
+// Every key is optional; null / missing keys fall through to the layer below.
+{
+    // Dataset hub root for collection (default: <repo>/data/datasets;
+    // env override: PANTHERA_DATA_ROOT)
+    "dataset_root": null,
+
+    // VLA q01/q99 norm-stats json for RL stage 2 (no default — set here,
+    // pass --stats_path, or put "stats_path" in the run config JSON)
+    "stats_path": null,
+
+    // Acquisition RobotInterface module for RL stage 2
+    // (default: <repo>/infer/robot_interface.py; env: PANTHERA_ACQ_IFACE)
+    "acquisition_interface": null,
+
+    // Panthera vendor SDK root (default: <repo>/arm/panthera/sdk)
+    "sdk_root": null,
+
+    // Directory for daemon sockets (default: /tmp)
+    "socket_dir": null
+}

@@ -64,6 +64,20 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+# finearm.core bootstrap (Phase 1; rollback = delete this block). Provides the
+# four-layer path resolution (CLI > env > configs/local.jsonc > repo-relative
+# defaults). Without finearm, legacy behavior stands unchanged.
+try:
+    from finearm.core import paths as _core_paths
+except ImportError:
+    try:
+        _deploy_src = REPO_ROOT.parent.parent / "src"
+        if str(_deploy_src) not in sys.path:
+            sys.path.insert(0, str(_deploy_src))
+        from finearm.core import paths as _core_paths
+    except ImportError:
+        _core_paths = None
+
 from rlt.critical import CriticalPhaseDetector
 from rlt.learner import (
     atomic_torch_save,
@@ -572,7 +586,9 @@ def parse_args():
     parser.add_argument("--server_port", type=int, default=8000)
     parser.add_argument("--task", default="pick up the bolt and place it on the nut")
     parser.add_argument("--rlt_checkpoint", required=True)
-    parser.add_argument("--stats_path", required=True)
+    parser.add_argument("--stats_path", default=None,
+                        help="VLA q01/q99 stats json; fallback chain: this flag > "
+                             "--config value > FINEARM_STATS_PATH > configs/local.jsonc")
     # robot
     parser.add_argument("--robot_module", default="robot.robot_interface",
                         help="module providing RobotInterface (adapted from the acquisition machine)")
@@ -695,7 +711,23 @@ def parse_args():
         parser.set_defaults(**config_values)
         for key in config_values:
             actions[key].required = False
-    return parser.parse_args()
+    args = parser.parse_args()
+    # --stats_path is no longer argparse-required: resolve through the four
+    # layers (CLI/config > FINEARM_STATS_PATH > configs/local.jsonc), then
+    # fail with guidance. (Phase 1; rollback = restore required=True.)
+    if not args.stats_path:
+        resolved = (
+            _core_paths.resolve_path("stats_path", env="FINEARM_STATS_PATH")
+            if _core_paths is not None
+            else None
+        )
+        if resolved is None:
+            parser.error(
+                '--stats_path is required: pass --stats_path, set "stats_path" in the '
+                "--config JSON, or add it to configs/local.jsonc"
+            )
+        args.stats_path = str(resolved)
+    return args
 
 
 def load_robot(module_name: str, *, dummy: bool):

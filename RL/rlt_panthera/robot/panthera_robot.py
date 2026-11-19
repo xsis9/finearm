@@ -38,7 +38,8 @@ Adaptation decisions (2026-11-13):
 
 Env:
   PANTHERA_ACQ_IFACE   path to the acquisition robot_interface.py
-                       (default: search the deploy tree, see _ACQ_CANDIDATES)
+                       (default: <repo>/infer/robot_interface.py via
+                       finearm.core; see _acquisition_candidates)
   PANTHERA_MOCK_IMAGES "1" → zero-image mock cameras (link testing; the arm
                        daemon is still required)
   PANTHERA_RTC_HOME    home pose "j1,...,j6,gripper" (acquisition default)
@@ -60,7 +61,21 @@ from robot.robot_interface import RobotInterface as _Stage2Contract
 
 logger = logging.getLogger(__name__)
 
-# Where the acquisition robot_interface.py may live, in priority order.
+# finearm.core bootstrap (Phase 1; rollback = delete this block). Without
+# finearm, the legacy absolute-path candidates below stand unchanged.
+try:
+    from finearm.core import paths as _core_paths
+except ImportError:
+    try:
+        _deploy_src = Path(__file__).resolve().parents[3] / "src"
+        if str(_deploy_src) not in sys.path:
+            sys.path.insert(0, str(_deploy_src))
+        from finearm.core import paths as _core_paths
+    except ImportError:
+        _core_paths = None
+
+# Legacy fallback candidates (machine-absolute paths). Used only when
+# finearm.core is unavailable; removed in Phase 5a.
 _ACQ_CANDIDATES = (
     "~/internship/baiqin/deploy/infer/robot_interface.py",   # 4060 deploy tree
     "/root/xsx/infer/robot_interface.py",                    # A100 copy (uploaded)
@@ -68,9 +83,24 @@ _ACQ_CANDIDATES = (
 )
 
 
-def _load_acquisition_module():
+def _acquisition_candidates() -> list[str]:
+    """PANTHERA_ACQ_IFACE > configs/local.jsonc > <repo>/infer/robot_interface.py.
+
+    Falls back to the legacy absolute-path list when finearm.core is
+    unavailable (Phase 1 safety net).
+    """
     override = os.environ.get("PANTHERA_ACQ_IFACE")
-    candidates = [override] if override else [p for p in _ACQ_CANDIDATES]
+    if _core_paths is not None:
+        resolved = _core_paths.resolve_path("acquisition_interface", cli=override)
+        if resolved is not None:
+            return [str(resolved)]
+    if override:
+        return [override]
+    return list(_ACQ_CANDIDATES)
+
+
+def _load_acquisition_module():
+    candidates = _acquisition_candidates()
     for candidate in candidates:
         path = Path(candidate).expanduser()
         if path.is_file():

@@ -20,6 +20,18 @@ jobs:
       - run: pip install ruff==0.17.5
       - run: ruff check .
 
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Also verifies the src-layout package builds/installs (hatchling).
+      - run: pip install -e . pytest
+      - name: Core suite (finearm.core, stdlib only)
+        run: python -m pytest tests/core/
+
   rl-tests:
     runs-on: ubuntu-latest
     steps:

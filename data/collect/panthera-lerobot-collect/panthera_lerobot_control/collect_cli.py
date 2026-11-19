@@ -30,6 +30,20 @@ from .adapters import AdapterError, ensure_panthera_serial_access
 from .constants import DEFAULT_SOCKET_PATH
 from .ipc import ControlClient, ControlClientError
 
+# finearm.core bootstrap (Phase 1; rollback = delete this block). Provides the
+# four-layer path resolution (CLI > env > configs/local.jsonc > repo-relative
+# defaults); without finearm, legacy behavior stands unchanged.
+try:
+    from finearm.core import paths as _core_paths
+except ImportError:
+    try:
+        _deploy_src = Path(__file__).resolve().parents[4] / "src"
+        if str(_deploy_src) not in sys.path:
+            sys.path.insert(0, str(_deploy_src))
+        from finearm.core import paths as _core_paths
+    except ImportError:
+        _core_paths = None
+
 
 DEFAULT_CAMERA_ROLE_NAMES = ("front", "wrist")
 CAMERA_SELECTION_PATH = Path(".panthera_camera_selection.json")
@@ -50,7 +64,16 @@ PANTHERA_ACTION_NAMES = (
     "target_gripper.pos",
 )
 def _default_data_root() -> Path:
-    """Dataset hub root: <deploy>/data/datasets (two levels above this tool dir)."""
+    """Dataset hub root: <repo>/data/datasets (two levels above this tool dir).
+
+    Phase 1: resolved through finearm.core when available (configs/local.jsonc
+    "dataset_root" override > repo-relative default), which yields the same
+    path as the legacy computation on a standard checkout.
+    """
+    if _core_paths is not None:
+        resolved = _core_paths.resolve_path("dataset_root")
+        if resolved is not None:
+            return resolved
     return Path(__file__).resolve().parents[3] / "datasets"
 
 
