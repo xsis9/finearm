@@ -214,9 +214,9 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertNotIn("envs/lerobot", daemon_text)
 
     def test_camera_lock_script_lives_in_deploy_utils_and_wrapper_calls_it(self):
-        # deploy/utils/lock_cameras.sh 是采集与推理共用的唯一权威副本;
+        # utils/lock_cameras.sh 是采集与推理共用的唯一权威副本;
         # 本工具不再保留自己的副本(防漂移),wrapper 预检按 PANTHERA_CAM_LOCK/
-        # deploy/utils 顺序调用。
+        # utils/ 顺序调用。
         script = ROOT.parents[2] / "utils" / "lock_cameras.sh"
         text = script.read_text()
 
@@ -229,13 +229,13 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertEqual(syntax.returncode, 0, syntax.stderr)
 
         self.assertFalse((ROOT / "scripts" / "lock_cameras.sh").exists(),
-                         "工具内不应再有 lock_cameras.sh 副本(权威副本在 deploy/utils)")
+                         "工具内不应再有 lock_cameras.sh 副本(权威副本在 utils/)")
         wrapper = (ROOT / "run_panthera_lerobot_collect.sh").read_text()
         self.assertIn('PANTHERA_CAM_LOCK:-$(dirname "${DATA_ROOT}")/utils/lock_cameras.sh', wrapper)
 
     def test_readmes_direct_users_to_lock_cameras_first(self):
-        # 采集(数据域 README,2026-11-12 从工具根迁至 deploy/data/README.md)与推理的
-        # README 都必须写明:第一步先跑 deploy/utils/lock_cameras.sh。
+        # 采集(数据域 README,2026-11-12 从工具根迁至 data/README.md)与推理的
+        # README 都必须写明:第一步先跑 utils/lock_cameras.sh(命令从仓库根执行)。
         collect_readme = (ROOT.parents[1] / "README.md").read_text()
         infer_root = ROOT.parents[2] / "infer"
         infer_readme_path = next(
@@ -246,10 +246,10 @@ class CollectScriptsTests(unittest.TestCase):
         infer_readme = infer_readme_path.read_text()
 
         for name, text in (("collect", collect_readme), ("infer", infer_readme)):
-            self.assertIn("deploy/utils/lock_cameras.sh", text, f"{name} README missing camera-lock step")
+            self.assertIn("utils/lock_cameras.sh", text, f"{name} README missing camera-lock step")
             self.assertIn("固定相机参数", text, f"{name} README should explain locking camera params first")
-        self.assertIn("bash deploy/utils/lock_cameras.sh", collect_readme)
-        self.assertIn("bash deploy/utils/lock_cameras.sh", infer_readme)
+        self.assertIn("bash utils/lock_cameras.sh", collect_readme)
+        self.assertIn("bash utils/lock_cameras.sh", infer_readme)
 
     def test_pyproject_declares_collection_packages_and_scripts_only(self):
         import tomllib

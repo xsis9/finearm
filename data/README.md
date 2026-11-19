@@ -1,12 +1,12 @@
 # data · 数据域(Panthera-HT 数据采集与数据集)
 
-`deploy/data/` 是 deploy 项目的**数据域**:数据采集工具、采集产出的数据集、
+`data/` 是本仓库的**数据域**:数据采集工具、采集产出的数据集、
 本机标定配置与日志全部在这里。工具驱动 Panthera-HT 机械臂,产出 LeRobot 原生
 格式数据集(模仿学习训练直接可用,无需转换)。
 
-**路径约定**:deploy 是项目根——命令从 deploy 目录发起,文档中的相对路径一律
-按 deploy 根解析(CLI 的 `--leader-config/--follower-config/--sdk-root` 等同样
-锚定 deploy 根,从任意 CWD 发起均可),代码内路径按 `__file__` 相对定位;
+**路径约定**:仓库根是项目根——命令从仓库根目录发起,文档中的相对路径一律
+按仓库根解析(CLI 的 `--leader-config/--follower-config/--sdk-root` 等同样
+锚定仓库根,从任意 CWD 发起均可),代码内路径按 `__file__` 相对定位;
 全项目无本机硬编码,克隆到任意机器可直接使用。
 
 - **操作手册(权威,先读这个)**:`collect/panthera-lerobot-collect/docs/quest2ros_setup.md`
@@ -16,29 +16,29 @@
 ## ⚠️ 采集前第一步:固定相机参数
 
 ```bash
-bash deploy/utils/lock_cameras.sh
+bash utils/lock_cameras.sh
 ```
 
 - 脚本把两台相机恢复到参考数据集 **bolt_test2** 采集时刻的确切参数
   (wrist 手动曝光 36/gain125、front 全 auto),逐项设置并**读回验证**,
   任一不一致自动重试,仍失败则拒绝继续
 - **训练与推理的相机外观必须一致**——该脚本是采集与推理
-  (`deploy/infer`)共用的唯一权威副本,放在 `deploy/utils/`,相机档案变更只改这一处
+  (`infer`)共用的唯一权威副本,放在 `utils/`,相机档案变更只改这一处
 - UVC 相机重插/断电后参数会复位,所以**每次开采集前都要跑**;
   `run_panthera_lerobot_collect.sh --live` 的相机预检会自动再调一遍(双保险),
   也可单独 `--check` 只验证不设置
 - `PANTHERA_CAM_LOCK=路径` 可覆盖脚本位置;`PANTHERA_CAM_LOCK_SKIP=1` 跳过(仅调试)
 
-## 数据域布局(deploy/data)
+## 数据域布局(data)
 
 ```text
-deploy/data/
+data/
 ├── README.md                          # 本文件(数据域总览)
 ├── collect/panthera-lerobot-collect/  # 采集工具(代码 + 自己的 .venv-lerobot + docs + tests)
 ├── datasets/                          # 采集数据集落这里(lerobot/<namespace>/<repo-id>/<时间戳>/)
 └── logs/                              # daemon/diagnostics 日志
 
-机械臂相关资产(SDK、robot_param 本机标定)统一在 <deploy>/arm/panthera 下,不在本数据域。
+机械臂相关资产(SDK、robot_param 本机标定)统一在 <仓库根>/arm/panthera 下,不在本数据域。
 ```
 
 ## 三种采集方式
@@ -50,7 +50,7 @@ deploy/data/
 | ③ Quest3S 遥操作 | 4 | endpoint + daemon + bridge + collect |
 
 ```bash
-cd deploy   # 项目根;下面所有相对路径一律按 deploy 根解析(从任意 CWD 发起均可)
+cd <仓库根>   # 项目根;下面所有相对路径一律按仓库根解析(从任意 CWD 发起均可)
 
 # 方式①:主从臂(1 个终端)
 ./data/collect/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live \
@@ -63,17 +63,17 @@ cd deploy   # 项目根;下面所有相对路径一律按 deploy 根解析(从�
   --teleop-gripper-squeeze-boost 1.0 --camera-fourcc MJPG
 ```
 
-(`--leader-config/--follower-config/--sdk-root` 等相对路径一律按 deploy 根解析,
+(`--leader-config/--follower-config/--sdk-root` 等相对路径一律按仓库根解析,
 无本机硬编码;`--sdk-root` 缺省即 `arm/panthera/sdk/Panthera-HT_SDK`,无需再传;
 方式②③的逐终端命令、参数含义、安全须知见操作手册 quest2ros_setup.md。)
 
 ## 首次环境搭建
 
 ```bash
-cd deploy
+cd <仓库根>
 ./data/collect/panthera-lerobot-collect/scripts/init_workspace.sh --install
                                        # 建采集 venv .venv-lerobot + 装 LeRobot 0.5.1 + SDK 电机 wheel
-                                       # (SDK 缺失时自动从 GitHub clone 并锁 revision,落在 deploy/arm/panthera/sdk)
+                                       # (SDK 缺失时自动从 GitHub clone 并锁 revision,落在 arm/panthera/sdk)
 ./data/collect/panthera-lerobot-collect/scripts/init_workspace.sh --check   # 校验
 ./arm/panthera/init_env.sh                      # 建机械臂驱动环境 arm/.venv(python3.12 + SDK 轮子 + SDK Python 依赖)
                                        # (daemon 用,与采集/推理环境三者解耦;缺失时会回落采集 venv)
@@ -90,7 +90,7 @@ cd deploy
 
 ```text
 run_panthera_lerobot_collect.sh   # 采集 wrapper(preflight + 相机锁定 + 拉起 lerobot-record)
-run_panthera_lerobot_daemon.sh    # daemon wrapper → 转发 deploy/arm/panthera/run_daemon.sh(驱动层权威入口)
+run_panthera_lerobot_daemon.sh    # daemon wrapper → 转发 arm/panthera/run_daemon.sh(驱动层权威入口)
 quest_bridge.py                   # Quest3S → daemon 遥操作桥(IK/FK,方式③)
 panthera_lerobot_control/         # 核心:daemon(controller/cli/ipc/adapters)+ 采集编排(collect_cli)
 lerobot_robot_panthera_ht/        # LeRobot Robot 插件(panthera_ht_follower,14 维 state + 相机)
@@ -105,12 +105,12 @@ tests/                            # 单测(python3 -m unittest discover -s tests
 
 - **与 `project-Embodied_AGV` 零依赖**:代码、配置、venv、数据全部自包含;旧项目仅作为
   历史出处存在。旧数据集仍在 `~/panthera/data/lerobot`(归旧项目/训练用),本工具新采的数据
-  一律落 `<deploy>/data/datasets/lerobot/`。
-- **机械臂相关资产统一在 `deploy/arm/panthera/`**(2026-11 抽离并归拢):daemon 由
-  `deploy/arm/run_daemon.sh` 启动、用独立的 `arm/.venv`;SDK 实体在 `arm/panthera/sdk/`,
+  一律落 `<仓库根>/data/datasets/lerobot/`。
+- **机械臂相关资产统一在 `arm/panthera/`**(2026-11 抽离并归拢):daemon 由
+  `arm/run_daemon.sh` 启动、用独立的 `arm/.venv`;SDK 实体在 `arm/panthera/sdk/`,
   本机标定在 `arm/panthera/robot_param/`;工具内旧命令 `./run_panthera_lerobot_daemon.sh`
   等价转发,深手册中的旧写法继续有效。
-- **相机参数档案**:`deploy/utils/lock_cameras.sh` 是采集与推理共用的**唯一权威副本**
+- **相机参数档案**:`utils/lock_cameras.sh` 是采集与推理共用的**唯一权威副本**
   (采集 wrapper 与推理端启动时都自动调用)。
 - **HG-Dagger 纠错采集方式重整中**(2026-11-12 清空旧脚本,`data/collect/Dagger/` 已删除);
   机械臂/IPC 基建不受影响,重整后的采集方式另行文档化。
@@ -122,7 +122,7 @@ tests/                            # 单测(python3 -m unittest discover -s tests
 ```bash
 # 终端1:mock daemon(驱动层)
 ./arm/panthera/run_daemon.sh --mock --hz 1000
-# 终端2:检查将执行的采集命令(不动硬件;--dataset.root 应指向 deploy/data/datasets)
+# 终端2:检查将执行的采集命令(不动硬件;--dataset.root 应指向 data/datasets)
 ./data/collect/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --mock --no-cameras \
   --repo-id local/smoke --task "mock smoke test" \
   --episodes 1 --episode-seconds 2 --reset-seconds 0 --print-command

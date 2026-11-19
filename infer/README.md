@@ -10,16 +10,16 @@
 > RTC 服务端说明:单连接足够(服务器逐条串行处理,客户端任一时刻最多 1 个在途
 > 请求);服务端不需要为 RTC 做任何改动。
 
-**路径约定**:下文命令中的 `deploy/` 指本仓库根目录(克隆到任意位置均可);
+**路径约定**:下文命令默认在仓库根目录执行(克隆到任意位置均可);
 所有代码内的路径都按 `__file__` 相对定位,不依赖克隆位置。
 
 ## 第三方依赖(克隆后先就位,均不入 git)
 
 | 位置 | 用途 | 获取 |
 |---|---|---|
-| `deploy/models/openpi/` | `init_env.sh` 从中本地安装 openpi-client;robot_interface 的 resize 实现也依赖 | `github.com/Physical-Intelligence/openpi` |
-| `deploy/models/lingbot-vla-v2/` | lingbot 适配器的 websocket 客户端 + panthera robot config/norm stats 参考副本 | 该模型官方仓库 |
-| `deploy/arm/panthera/sdk/` | Panthera-HT SDK(URDF/wheel),采集工具 `scripts/init_workspace.sh` 自动安装 | `github.com/HighTorque-Robotics/Panthera-HT_SDK` |
+| `models/openpi/` | `init_env.sh` 从中本地安装 openpi-client;robot_interface 的 resize 实现也依赖 | `github.com/Physical-Intelligence/openpi` |
+| `models/lingbot-vla-v2/` | lingbot 适配器的 websocket 客户端 + panthera robot config/norm stats 参考副本 | 该模型官方仓库 |
+| `arm/panthera/sdk/` | Panthera-HT SDK(URDF/wheel),采集工具 `scripts/init_workspace.sh` 自动安装 | `github.com/HighTorque-Robotics/Panthera-HT_SDK` |
 
 缺它们时 `init_env.sh` / 适配器 / 采集工具会明确报错提示。
 
@@ -60,8 +60,8 @@ bash utils/lock_cameras.sh
 
 # ② 机械臂 daemon(单臂、policy 就绪;robot_interface 连它的 socket)
 bash arm/panthera/run_daemon.sh --live --no-leader --hz 1000
-#    (首次先跑一次 deploy/arm/init_env.sh 建驱动环境;保持运行,停止时自动缓动归位再抱闸。
-#     旧路径 deploy/data/collect/panthera-lerobot-collect/run_panthera_lerobot_daemon.sh 等价)
+#    (首次先跑一次 arm/init_env.sh 建驱动环境;保持运行,停止时自动缓动归位再抱闸。
+#     旧路径 data/collect/panthera-lerobot-collect/run_panthera_lerobot_daemon.sh 等价)
 ```
 
 **第 3 步 · AU 执行机 · 终端 2:ssh 隧道**(把 4090 端口映射到本机,之后 `--host` 一律 127.0.0.1)
@@ -151,7 +151,7 @@ class Adapter(AdapterBase):
 **2 · 离线自测**(不连服务器、不起机械臂):
 
 ```bash
-cd deploy/infer
+cd infer
 .venv/bin/python - <<'EOF'
 from adapters import mock_obs
 from adapters.<name> import Adapter
@@ -183,7 +183,7 @@ EOF
 | `bench_rtt.py` | 通用 RTT 基准(按适配器),输出 p50/p95 与建议 k |
 | `adapters/` | **模型适配器,唯一模型相关层**(现:pi05 / lingbot);`__init__.py` 是注册表 |
 | `robot_interface.py` | 机械臂/相机接口(共用):daemon IPC、双相机 MJPG 取流(断流重开/帧率自检)、锁相机、go_home 归位、`mock_images`、`--selftest` 自检;`get_obs(style)` 双风格 |
-| `init_env.sh` + `requirements.txt` | 环境初始化:建本目录 `.venv`(openpi-client 从 `deploy/models/openpi` 本地安装,deploy 自包含,拷走即用) |
+| `init_env.sh` + `requirements.txt` | 环境初始化:建本目录 `.venv`(openpi-client 从 `models/openpi` 本地安装,仓库自包含,拷走即用) |
 | `.venv/` | 推理环境(所有模型共用) |
 
 ## lingbot-vla-2 关键信息(适配器 `lingbot.py` 对应的服务端)
@@ -196,7 +196,7 @@ EOF
 - 仓库里必须已有 `configs/robot_configs/panthera.yaml` 和 `assets/norm_stats/panthera.json`,
   且 **norm_stats 与训练同一份**(norm_stats 是全量训练数据合并统计的;
   训练/部署不同份 → 动作幅度异常)。缺了就从执行机拷:
-  `scp deploy/models/lingbot-vla-v2/{configs/robot_configs/panthera.yaml,assets/norm_stats/panthera.json} <user>@<4090-IP>:<仓库路径>/<对应目录>/`
+  `scp models/lingbot-vla-v2/{configs/robot_configs/panthera.yaml,assets/norm_stats/panthera.json} <user>@<4090-IP>:<仓库路径>/<对应目录>/`
 - `export QWEN3VL_PATH` 指向 Qwen3-VL-4B-Instruct(base 测试时装过)
 - 客户端 reset 时服务端报 `FileNotFoundError: configs/robot_configs/panthera.yaml`
   = 文件缺失或服务端 cwd 不在仓库根(2026-11-11 实测踩过)
@@ -209,7 +209,7 @@ EOF
   FeatureTransform;obs 发数据集原始特征名(`observation.state` 14 维 /
   `observation.images.front` / `.wrist` / `task`)。返回 key = **服务端那份 robot config
   里的动作名**:4090 训练 config 是单块 `action` (T,7)(2026-11-11 实测);AU 参考副本
-  (`deploy/models/lingbot-vla-v2`)的 config 是拆分式 `action.arm.position`
+  (`models/lingbot-vla-v2`)的 config 是拆分式 `action.arm.position`
   + `action.effector.position`。适配器两种都兼容。**训练 config 是权威——不要拿
   AU 的 config 覆盖 4090 的**(ckpt 按它训的,服务端逆变换也按它做)
 - **图像**:发原始 640×480,服务端自己 resize 到 256×256;客户端不翻转不裁剪
@@ -297,6 +297,6 @@ k 与滞后/断档的关系:k=5 → 滞后 ~165ms;k=10 → ~330ms。RTT 允许�
 
 ## 相关
 
-- 采集(训练数据):`deploy/data/collect/panthera-lerobot-collect/`
-- 相机参数档案(唯一权威):`deploy/utils/lock_cameras.sh`
-- lingbot-vla-v2 仓库(本地参考副本):`deploy/models/lingbot-vla-v2/`
+- 采集(训练数据):`data/collect/panthera-lerobot-collect/`
+- 相机参数档案(唯一权威):`utils/lock_cameras.sh`
+- lingbot-vla-v2 仓库(本地参考副本):`models/lingbot-vla-v2/`
