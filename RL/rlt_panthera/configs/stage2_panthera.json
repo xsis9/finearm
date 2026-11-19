@@ -1,0 +1,84 @@
+{
+    // Panthera-HT Stage 2 online RL config (execution machine, 4060).
+    // JSONC: // line and /* block */ comments allowed. CLI flags override.
+    // Same-origin chain (PLAN.md §二.5): p3/2000 base → prefix_v1 embeddings →
+    // stage1_v1/best_checkpoint.pt → task string below. All four are checked
+    // at startup against the serve_rlt metadata handshake.
+
+    // ── serve_rlt endpoint (4090, via ssh tunnel: -L 8000:127.0.0.1:8000) ──
+    "server_host": "127.0.0.1",
+    "server_port": 8000,
+    "task": "pick up the bolt and place it on the nut",
+
+    // ── checkpoints / stats (copied from the A100 machine) ──
+    "rlt_checkpoint": "data/stage1_v1/best_checkpoint.pt",
+    "stats_path": "/home/xsx/panthera/data/lerobot/aggregated/panthera_bolt_p3/meta/stats.json",
+
+    // ── robot (implement robot/panthera_robot.py against RobotInterface) ──
+    "robot_module": "robot.panthera_robot",
+
+    // ── episode / control (absolute joint space, 30 fps) ──
+    "control_fps": 30.0,
+    "steps_per_episode": 6000,         // 10 s; multiples of 10 preferred
+    "max_episodes": 200,
+    "warmup_episodes": 15,             // paper: ≥15 pure-VLA episodes first
+    "reset_between_episodes": true,
+
+    // ── RL (paper defaults; rlt package contract paper_full_output_v1) ──
+    // RL window = 10 steps ≈ 0.33 s: locked by the stage-1 checkpoint contract
+    // (paper_full_output_v1), not configurable here.
+    "rtc_mode": false,
+    "rtc_blend": 2,  
+    "replan_every_window": true,       // paper Alg.1: reference ~ pi_vla(s_t)
+    "actor_start_updates": 1000,       // VLA stays in control until this many updates
+    "actor_critical_delay_steps": 15,  // ≥1.5 windows of sustained critical before actor
+    "actor_lr": 3e-4,
+    "critic_lr": 3e-4,
+    "utd_ratio": 5,
+    "critic_per_actor": 2,
+    "batch_size": 256,
+    "discount": 0.99,
+    "target_tau": 0.005,
+    "warmup_bc_weight": 10.0,
+    "warmup_q_weight": 0.0,
+    "online_bc_weight": 10.0,
+    "online_q_weight": 1.0,
+    "delta_weight": 0.0,               // 0 = paper-aligned (no smoothness loss)
+    "learner_warmup_updates": 0,
+    "policy_fixed_std": 0.05,
+    "reference_dropout": 0.5,
+    "actor_hidden_dim": 256,
+    "actor_num_layers": 2,
+    "critic_hidden_dim": 256,
+    "critic_num_layers": 2,
+    "buffer_capacity": 100000,
+
+    // ── actor execution safety ──
+    "actor_execute_mean": true,        // deterministic mean (no sampling jitter)
+    "actor_noise_std": 0.02,           // small exploration on the mean
+    "actor_execution_scale": 1.0,
+    "actor_execution_steps": 0,        // 0 = full 10-step window
+    // Per-step ACTOR-only clamp, radians, JSON per joint or scalar string:
+    "actor_max_relative_target": null,
+
+    // ── logging / persistence ──
+    "output_dir": "checkpoints/stage2_panthera_v1",
+    "save_every": 20,
+    "metrics_log_every": 20,
+    "metrics_log_window": 100,
+    "seed": 42,
+    "device": "cpu",                   // learner on the 4060: cpu is plenty for 2×256 MLPs
+
+    // ── critical phase (Phase 5 wires the auto-detector; manual 'c' for now) ──
+    "auto_critical": false,
+    "critical_classifier": null,
+    "auto_critical_threshold_on": 0.75,
+    "auto_critical_threshold_off": 0.45,
+    "auto_critical_smooth_steps": 5,
+    "auto_critical_min_on_chunks": 2,
+    "auto_critical_start_delay_steps": 60,
+    "auto_critical_once": true,
+    "auto_critical_override_cooldown": 3.0,
+    "save_critical_frames": true,
+    "critical_record_path": null       // default: <output_dir>/critical_samples.pkl
+}

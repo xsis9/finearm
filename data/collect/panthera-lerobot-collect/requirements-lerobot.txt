@@ -1,0 +1,21 @@
+# LeRobot-native Panthera collection environment.
+#
+# Install with scripts/init_workspace.sh so the pinned standalone SDK is
+# verified and its Python 3.12/x86_64 hightorque_robot wheel is selected.
+
+lerobot==0.5.1
+-e .
+
+# Panthera SDK/runtime Python dependencies. hightorque_robot is installed by
+# scripts/init_workspace.sh from PANTHERA_SDK_ROOT after revision validation.
+pin>=2.6.0
+scipy>=1.11
+numpy>=1.26
+PyYAML>=6.0
+
+# Recording and video dependencies used by LeRobot camera/dataset flows.
+opencv-python>=4.8
+Pillow>=10.0
+av>=12.0
+datasets>=2.19
+torch>=2.2

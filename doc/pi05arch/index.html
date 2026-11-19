@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>π0.5 模型架构</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-soft:    #5a6580;
+      --color-accent:  #bf4520;
+      --color-rule:    rgba(45,49,66,0.12);
+      --font-sans:     'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif SC', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1320px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 2.5vw + 0.8rem, 2.15rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    .hint {
+      margin-top: 12px;
+      font: 500 13px/1.5 var(--font-sans);
+      color: var(--color-soft);
+    }
+
+    .examples { margin: 14px 0 0; font: 500 13px/1.8 var(--font-sans); color: var(--color-soft); }
+    .examples a { color: var(--color-accent); text-decoration: none; border-bottom: 1px solid rgba(191,69,32,0.4); }
+    .examples a:hover { border-bottom-color: var(--color-accent); }
+    svg { width: 100%; min-width: 1280px; display: block; }
+
+    /* ---- drill-down nodes ---- */
+    .drill { cursor: pointer; }
+    .drill .drill-box { transition: stroke 0.15s ease, stroke-width 0.15s ease; }
+    .drill:hover .drill-box,
+    .drill:focus-visible .drill-box { stroke: var(--color-accent); stroke-width: 1.6; }
+    .drill:hover .drill-badge,
+    .drill:focus-visible .drill-badge { fill: rgba(191,69,32,0.18); }
+
+    /* ---- flowing-arrow animation (loop mode, CSS-only decorative layer) ---- */
+    .flow {
+      fill: none;
+      stroke: var(--color-muted);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-dasharray: 3 24;
+      opacity: 0.85;
+      pointer-events: none;
+      animation: flow-dash 3s linear infinite;
+    }
+    .flow-accent { stroke: var(--color-accent); }
+    @keyframes flow-dash { to { stroke-dashoffset: -27; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .flow { display: none !important; }
+      .drill .drill-box { transition: none; }
+    }
+    @media print {
+      .flow { display: none !important; }
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · openpi / src/openpi/models/pi0.py</p>
+    <h1>π0.5 模型架构 — PaliGemma 双塔 × Flow Matching</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pi05-architecture-title pi05-architecture-desc">
+        <title id="pi05-architecture-title">π0.5 模型架构</title>
+        <desc id="pi05-architecture-desc">π0.5 视觉-语言-动作模型：相机图像经 SigLIP 编码、语言指令与离散化状态共同构成前缀，进入 PaliGemma 2B 骨干；噪声动作与时间步进入 300M 动作专家，经联合注意力读取前缀 KV 缓存，时间步通过 adaRMSNorm 注入；输出的速度场经 10 步 Euler 去噪生成 50×32 动作块。</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- ===== Zone: Gemma dual-tower ===== -->
+        <rect x="508" y="56" width="288" height="328" rx="8"
+              fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <rect x="574" y="60" width="156" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="652" y="69" fill="#5a6580" font-size="8"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">GEMMA DUAL-TOWER · JOINT ATTN</text>
+
+        <!-- ===== Arrows (base + flow overlay + label), before nodes ===== -->
+
+        <!-- A1 cameras -> SigLIP -->
+        <line x1="200" y1="104" x2="254" y2="104" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line class="flow" x1="200" y1="104" x2="254" y2="104" aria-hidden="true"/>
+
+        <!-- A2 SigLIP -> VLM -->
+        <line x1="432" y1="104" x2="527" y2="104" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line class="flow" x1="432" y1="104" x2="527" y2="104" aria-hidden="true"/>
+        <rect x="440" y="84" width="60" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="470" y="93" fill="#5a6580" font-size="9"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">IMG TOKENS</text>
+
+        <!-- A3 prompt -> VLM (elbow up) -->
+        <path d="M 200,232 H 488 Q 496,232 496,224 V 148 Q 496,140 504,140 H 527"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path class="flow" d="M 200,232 H 488 Q 496,232 496,224 V 148 Q 496,140 504,140 H 527" aria-hidden="true"/>
+        <rect x="316" y="212" width="68" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="350" y="221" fill="#5a6580" font-size="9"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">LANG TOKENS</text>
+
+        <!-- A4 VLM -> Action Expert (KV cache) -->
+        <line x1="652" y1="168" x2="652" y2="271" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line class="flow" x1="652" y1="168" x2="652" y2="271" aria-hidden="true"/>
+        <rect x="664" y="214" width="52" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="690" y="223" fill="#5a6580" font-size="9"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">KV CACHE</text>
+
+        <!-- A5 noisy actions -> Action Expert -->
+        <line x1="432" y1="328" x2="527" y2="328" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line class="flow" x1="432" y1="328" x2="527" y2="328" aria-hidden="true"/>
+        <rect x="442" y="308" width="60" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="472" y="317" fill="#5a6580" font-size="9"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ACTION TOK</text>
+
+        <!-- A6 timestep -> Action Expert (adaRMS, accent) -->
+        <path d="M 432,448 H 644 Q 652,448 652,440 V 353"
+              fill="none" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <path class="flow flow-accent" d="M 432,448 H 644 Q 652,448 652,440 V 353" aria-hidden="true"/>
+        <rect x="588" y="390" width="44" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="610" y="399" fill="#bf4520" font-size="9"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ADARMS</text>
+
+        <!-- A7 Action Expert -> out proj -->
+        <line x1="776" y1="328" x2="851" y2="328" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line class="flow" x1="776" y1="328" x2="851" y2="328" aria-hidden="true"/>
+
+        <!-- A8 out proj -> flow matching -->
+        <line x1="1012" y1="328" x2="1059" y2="328" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line class="flow" x1="1012" y1="328" x2="1059" y2="328" aria-hidden="true"/>
+
+        <!-- A9 flow matching -> noisy actions (denoising loop, dashed) -->
+        <path d="M 1150,376 V 544 Q 1150,552 1142,552 H 236 Q 228,552 228,544 V 344 Q 228,336 236,336 H 255"
+              fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <rect x="668" y="532" width="60" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="698" y="541" fill="#5a6580" font-size="9"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">EULER STEP</text>
+
+        <!-- ===== Nodes ===== -->
+
+        <!-- N1 cameras (input) (drill -> input spec) -->
+        <a class="drill" href="pi05_detail_input_camera.html" aria-label="查看相机图像输入规格">
+          <!-- N1 cameras (input) -->
+          <rect x="40" y="72" width="160" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="40" y="72" width="160" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+          <rect x="48" y="78" width="34" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.40)" stroke-width="0.8"/>
+          <text x="65" y="87" fill="rgba(90,101,128,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">INPUT</text>
+          <text x="120" y="112" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">相机图像</text>
+          <text x="120" y="126" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">FRONT / WRIST</text>
+          <rect class="drill-badge" x="180" y="78" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="186" y="87" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- N2 SigLIP ViT (encoder, drill -> detail page) -->
+        <a class="drill" href="pi05_detail_siglip.html" aria-label="查看 SigLIP ViT 内部结构">
+          <rect x="256" y="72" width="176" height="64" rx="6" fill="#f5f5f5"/>
+          <rect class="drill-box" x="256" y="72" width="176" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <rect x="264" y="78" width="40" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+          <text x="284" y="87" fill="rgba(45,49,66,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">ENCODE</text>
+          <text x="344" y="112" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">SigLIP ViT</text>
+          <text x="344" y="126" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">So400m/14 · 400M</text>
+          <rect class="drill-badge" x="412" y="78" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="418" y="87" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- N3 prompt + state (input) (drill -> input spec) -->
+        <a class="drill" href="pi05_detail_input_prompt.html" aria-label="查看语言指令与状态输入规格">
+          <!-- N3 prompt + state (input) -->
+          <rect x="40" y="200" width="160" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="40" y="200" width="160" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+          <rect x="48" y="206" width="34" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.40)" stroke-width="0.8"/>
+          <text x="65" y="215" fill="rgba(90,101,128,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">INPUT</text>
+          <text x="120" y="240" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">语言指令 + 状态</text>
+          <text x="120" y="254" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">STATE TOKENIZED</text>
+          <rect class="drill-badge" x="180" y="206" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="186" y="215" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- N4 PaliGemma VLM (prefix backbone, drill -> detail page) -->
+        <a class="drill" href="pi05_detail_vlm.html" aria-label="查看 PaliGemma VLM 内部结构">
+          <rect x="528" y="88" width="248" height="80" rx="6" fill="#f5f5f5"/>
+          <rect class="drill-box" x="528" y="88" width="248" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <rect x="536" y="94" width="40" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+          <text x="556" y="103" fill="rgba(45,49,66,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">PREFIX</text>
+          <text x="652" y="130" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">PaliGemma VLM</text>
+          <text x="652" y="146" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">GEMMA_2B · WIDTH 2048</text>
+          <rect class="drill-badge" x="756" y="94" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="762" y="103" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- N5 Action Expert (suffix, focal, drill -> detail page) -->
+        <a class="drill" href="pi05_detail_expert.html" aria-label="查看 Action Expert 内部结构">
+          <rect x="528" y="272" width="248" height="80" rx="6" fill="#f5f5f5"/>
+          <rect class="drill-box" x="528" y="272" width="248" height="80" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+          <rect x="536" y="278" width="40" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.40)" stroke-width="0.8"/>
+          <text x="556" y="287" fill="rgba(191,69,32,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">SUFFIX</text>
+          <text x="652" y="314" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">Action Expert</text>
+          <text x="652" y="330" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">GEMMA_300M · ADARMS</text>
+          <rect class="drill-badge" x="756" y="278" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="762" y="287" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- N6 noisy actions (input) (drill -> input spec) -->
+        <a class="drill" href="pi05_detail_input_action.html" aria-label="查看噪声动作输入规格">
+          <!-- N6 noisy actions (input) -->
+          <rect x="256" y="296" width="176" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="256" y="296" width="176" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+          <rect x="264" y="302" width="34" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.40)" stroke-width="0.8"/>
+          <text x="281" y="311" fill="rgba(90,101,128,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">INPUT</text>
+          <text x="344" y="336" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">噪声动作 x_t</text>
+          <text x="344" y="350" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">X_T 50x32 · LIN PROJ</text>
+          <rect class="drill-badge" x="412" y="302" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="418" y="311" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- N7 timestep (input) (drill -> input spec) -->
+        <a class="drill" href="pi05_detail_input_time.html" aria-label="查看时间步输入规格">
+          <!-- N7 timestep (input) -->
+          <rect x="256" y="416" width="176" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="256" y="416" width="176" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+          <rect x="264" y="422" width="34" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.40)" stroke-width="0.8"/>
+          <text x="281" y="431" fill="rgba(90,101,128,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">INPUT</text>
+          <text x="344" y="456" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">时间步 t</text>
+          <text x="344" y="470" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">SINCOS + 2x MLP</text>
+          <rect class="drill-badge" x="412" y="422" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="418" y="431" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- N8 velocity projection -->
+        <rect x="852" y="296" width="160" height="64" rx="6" fill="#f5f5f5"/>
+        <rect x="852" y="296" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="860" y="302" width="30" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="875" y="311" fill="rgba(45,49,66,0.8)" font-size="8"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">PROJ</text>
+        <text x="932" y="336" fill="#2d3142" font-size="13" font-weight="600"
+              font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">速度场投影 v_t</text>
+        <text x="932" y="350" fill="#4f5d75" font-size="10"
+              font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">ACTION_OUT_PROJ</text>
+
+        <!-- N9 Flow Matching denoise (output, focal, drill -> detail page) -->
+        <a class="drill" href="pi05_detail_flow.html" aria-label="查看 Flow Matching 训练与去噪细节">
+          <rect x="1060" y="280" width="180" height="96" rx="6" fill="#f5f5f5"/>
+          <rect class="drill-box" x="1060" y="280" width="180" height="96" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+          <rect x="1068" y="286" width="40" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.40)" stroke-width="0.8"/>
+          <text x="1088" y="295" fill="rgba(191,69,32,0.8)" font-size="8"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">OUTPUT</text>
+          <text x="1150" y="326" fill="#2d3142" font-size="13" font-weight="600"
+                font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">Flow Matching 去噪</text>
+          <text x="1150" y="344" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">10x EULER · KV REUSE</text>
+          <text x="1150" y="358" fill="#4f5d75" font-size="10"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">OUTPUT X0 [50x32]</text>
+          <rect class="drill-badge" x="1220" y="286" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="1226" y="295" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+
+        <!-- ===== Legend ===== -->
+        <line x1="40" y1="660" x2="1240" y2="660" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="40" y="682" fill="#4f5d75" font-size="9"
+              font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+
+        <rect x="130" y="670" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+        <text x="154" y="681" fill="#4f5d75" font-size="13" font-weight="500"
+              font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">π0.5 核心</text>
+
+        <rect x="250" y="670" width="16" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+        <text x="274" y="681" fill="#4f5d75" font-size="13" font-weight="500"
+              font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">输入</text>
+
+        <rect x="340" y="670" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="364" y="681" fill="#4f5d75" font-size="13" font-weight="500"
+              font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">骨干 / 投影</text>
+
+        <line x1="470" y1="676" x2="498" y2="676" stroke="#4f5d75" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="506" y="681" fill="#4f5d75" font-size="13" font-weight="500"
+              font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">去噪回路 · 推理时</text>
+
+        <line x1="680" y1="676" x2="708" y2="676" stroke="#bf4520" stroke-width="1.2"/>
+        <text x="716" y="681" fill="#4f5d75" font-size="13" font-weight="500"
+              font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">adaRMS 时间步注入</text>
+      </svg>
+    </div>
+    <p class="hint">带 <span style="color:#bf4520;font-weight:600">+</span> 角标的模块与输入均可点击：模块 → 内部结构，再点 Block → 单层细节；输入 → 张量维度与含义 · 箭头上的流动光点表示数据方向，系统开启"减少动态效果"时自动隐藏</p>
+    <p class="examples">示例数据流（点击切换）：<a href="pi05_example_infer.html">① 推理 · 螺栓任务全流程</a> · <a href="pi05_example_train.html">② 训练 · 一步加噪与损失（含具体数值）</a> · <a href="pi05_example_variant.html">③ 变体 · 单相机短指令</a></p>
+  </div>
+</body>
+</html>

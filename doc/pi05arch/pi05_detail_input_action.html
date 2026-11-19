@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>噪声动作 x_t — 输入规格 · π0.5</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-soft:    #5a6580;
+      --color-accent:  #bf4520;
+      --color-rule:    rgba(45,49,66,0.12);
+      --font-sans:     'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif SC', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1080px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.3vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.25rem;
+    }
+    .crumb {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin: 0 0 12px;
+      padding: 7px 12px;
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      background: transparent;
+      font: 500 13px/1 var(--font-sans);
+      color: var(--color-muted);
+      text-decoration: none;
+    }
+    .crumb:hover { border-color: var(--color-accent); color: var(--color-ink); }
+    .crumb:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .caption {
+      margin-top: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--color-muted);
+      letter-spacing: 0.01em;
+    }
+    svg { width: 100%; min-width: 960px; display: block; }
+    .flow {
+      fill: none;
+      stroke: var(--color-muted);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-dasharray: 3 24;
+      opacity: 0.85;
+      pointer-events: none;
+      animation: flow-dash 3s linear infinite;
+    }
+    .flow-accent { stroke: var(--color-accent); }
+    @keyframes flow-dash { to { stroke-dashoffset: -27; } }
+    @media (prefers-reduced-motion: reduce) { .flow { display: none !important; } }
+    @media print {
+      .flow { display: none !important; }
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">π0.5 · INPUT · actions</p>
+    <a class="crumb" href="index.html">← 返回总览</a>
+    <h1>噪声动作 x_t — 输入规格</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pi05-in-act-title pi05-in-act-desc">
+        <title id="pi05-in-act-title">噪声动作输入规格</title>
+        <desc id="pi05-in-act-desc">噪声动作张量 [B,50,32]：50 为动作块长度（一次推理生成整段动作），32 为动作维度（依机器人配置的关节指令）；经 action_in_proj 线性层投影为 [B,50,1024] 的后缀 token。</desc>
+        <defs><marker id="ia-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker></defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <line x1="200" y1="160" x2="262" y2="160" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#ia-arrow)"/>
+        <line class="flow" x1="200" y1="160" x2="262" y2="160" aria-hidden="true"/>
+        <line x1="504" y1="160" x2="570" y2="160" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#ia-arrow)"/>
+        <line class="flow" x1="504" y1="160" x2="570" y2="160" aria-hidden="true"/>
+        <line x1="742" y1="160" x2="792" y2="160" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#ia-arrow)"/>
+        <line class="flow" x1="742" y1="160" x2="792" y2="160" aria-hidden="true"/>
+
+        <rect x="40" y="128" width="160" height="64" rx="6" fill="#f5f5f5"/>
+        <rect x="40" y="128" width="160" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+        <rect x="48" y="134" width="34" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.40)" stroke-width="0.8"/>
+<text x="65.0" y="143" fill="rgba(90,101,128,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">INPUT</text>
+        <text x="120.0" y="164.0" fill="#2d3142" font-size="13" font-weight="600" font-family="Geist, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif" text-anchor="middle">动作 / 噪声</text>
+        <text x="120.0" y="180.0" fill="#4f5d75" font-size="10" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle">DATA | EPS~N(0,1)</text>
+
+        <rect x="264" y="104" width="240" height="112" rx="6" fill="#f5f5f5"/>
+        <rect x="264" y="104" width="240" height="112" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+        <rect x="272" y="110" width="40" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.40)" stroke-width="0.8"/>
+        <text x="292" y="119" fill="rgba(79,93,117,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">TENSOR</text>
+        <text x="384" y="138" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">动作张量 [B,50,32]</text>
+        <rect x="288" y="160" width="70" height="6" rx="1" fill="rgba(45,49,66,0.22)"/>
+        <rect x="288" y="171" width="70" height="6" rx="1" fill="rgba(45,49,66,0.22)"/>
+        <rect x="288" y="182" width="70" height="6" rx="1" fill="rgba(45,49,66,0.22)"/>
+        <rect x="288" y="193" width="70" height="6" rx="1" fill="rgba(45,49,66,0.22)"/>
+        <rect x="288" y="204" width="70" height="6" rx="1" fill="rgba(45,49,66,0.22)"/>
+        <text x="372" y="176" fill="#2d3142" font-size="13" font-weight="500" font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">50：动作块长度</text>
+        <text x="372" y="196" fill="#2d3142" font-size="13" font-weight="500" font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">32：动作维度</text>
+
+        <rect x="572" y="128" width="170" height="64" rx="6" fill="#f5f5f5"/>
+        <rect x="572" y="128" width="170" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="580" y="134" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+<text x="598.0" y="143" fill="rgba(45,49,66,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">LINEAR</text>
+        <text x="657.0" y="164.0" fill="#2d3142" font-size="13" font-weight="600" font-family="Geist, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif" text-anchor="middle">线性投影</text>
+        <text x="657.0" y="180.0" fill="#4f5d75" font-size="10" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle">x @ W [32 -&gt; 1024]</text>
+        <rect x="794" y="128" width="126" height="64" rx="6" fill="#f5f5f5"/>
+        <rect x="794" y="128" width="126" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+        <rect x="802" y="134" width="26" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.40)" stroke-width="0.8"/>
+<text x="815.0" y="143" fill="rgba(79,93,117,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">OUT</text>
+        <text x="857.0" y="164.0" fill="#2d3142" font-size="13" font-weight="600" font-family="Geist, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif" text-anchor="middle">动作 tokens</text>
+        <text x="857.0" y="180.0" fill="#4f5d75" font-size="10" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle">[B,50,1024]</text>
+      </svg>
+    </div>
+    <p class="caption">来源：训练 x_t = t·ε + (1−t)·a（a 为示教动作，先归一化）；推理起点 ε ~ N(0,1) — pi0.py:196-199, 231<br>50 步动作块一次去噪生成，整块下发滚动执行；32 维内容依机器人配置（关节速度/位置增量/夹爪等）<br>action_in_proj = nnx.Linear(action_dim=32, width=1024) — pi0.py:92；输出投影对称：action_out_proj Linear(1024,32) — pi0.py:100</p>
+  </div>
+</body>
+</html>

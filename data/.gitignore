@@ -1,0 +1,9 @@
+# 数据域:采集数据集、运行日志不入库(SDK 在 arm/sdk,见 deploy/.gitignore)。
+/datasets/
+/logs/
+
+# 采集工具的 venv 与本机状态(工具目录内另有 .gitignore)。
+/collect/panthera-lerobot-collect/.venv-lerobot/
+/collect/panthera-lerobot-collect/.venv/
+/collect/panthera-lerobot-collect/.env
+/collect/panthera-lerobot-collect/.panthera_camera_selection.json

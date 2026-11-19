@@ -1,0 +1,19 @@
+# ---- 产物与大数据(不入库) ----
+/data/datasets/
+/data/logs/
+/RL/rlt_panthera/checkpoints/
+/RL/rlt_panthera/data/
+/envs/
+
+# ---- 第三方 vendored(refactor Phase 0 再从训练机同步 openpi 修改版正式入库) ----
+/arm/panthera/sdk/
+/arm/panthera/LiteArm-A1/
+/models/
+/RL/RL-Token-Pi05-open/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv*/

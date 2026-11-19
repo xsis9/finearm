@@ -1,0 +1,34 @@
+states:
+  - observation.state.arm.position:
+      origin_keys:
+        - observation.state:        # 6 关节角 [0:6)
+            start: 0
+            end: 6
+  - observation.state.effector.position:
+      origin_keys:
+        - observation.state:        # 夹爪位置 [6:7)
+            start: 6
+            end: 7
+
+actions:
+  - action.arm.position:
+      origin_keys:
+        - action:                   # 6 关节目标 [0:6)
+            start: 0
+            end: 6
+      subtract_state: true          # 真机数据官方建议:arm 学 delta(部署时自动加回)
+      relative_type: local          # 关节空间相减;不写默认 quaternion_local,会走末端位姿分支 assert 失败
+  - action.effector.position:
+      origin_keys:
+        - action:                   # 夹爪目标 [6:7)
+            start: 6
+            end: 7
+      subtract_state: false         # 夹爪学绝对开度
+
+images:
+  - observation.images.camera_top:
+      origin_keys: observation.images.front    # 外部全局相机 → top 槽
+  - observation.images.camera_wrist_left:
+      origin_keys: observation.images.wrist    # 腕相机 → 左腕槽
+
+norm_stats: assets/norm_stats/panthera.json

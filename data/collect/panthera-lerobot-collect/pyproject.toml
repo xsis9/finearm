@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+# 独立数据采集工具(从 project-Embodied_AGV 抽离,2026-11-10)。
+# ⚠️ 发行名必须与实际插件包名一致(lerobot_robot_panthera_ht):
+# LeRobot 按已安装发行名 import 同名模块来发现插件,发行名对不上任何包时
+# 插件注册失败,lerobot-record 会报 --robot.type invalid choice。
+[project]
+name = "lerobot_robot_panthera_ht"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+[project.scripts]
+panthera-control-daemon = "panthera_lerobot_control:main"
+panthera-lr-collect = "panthera_lerobot_control.collect_cli:main"
+
+[tool.setuptools]
+packages = [
+    "panthera_lerobot_control",
+    "lerobot_robot_panthera_ht",
+    "lerobot_teleoperator_panthera_ht",
+]

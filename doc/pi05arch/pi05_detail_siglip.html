@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SigLIP ViT — 视觉编码器 (So400m/14) · π0.5</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-soft:    #5a6580;
+      --color-accent:  #bf4520;
+      --color-rule:    rgba(45,49,66,0.12);
+      --font-sans:     'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif SC', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1080px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.3vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.25rem;
+    }
+    .crumb {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin: 0 0 12px;
+      padding: 7px 12px;
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      background: transparent;
+      font: 500 13px/1 var(--font-sans);
+      color: var(--color-muted);
+      text-decoration: none;
+    }
+    .crumb:hover { border-color: var(--color-accent); color: var(--color-ink); }
+    .crumb:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .caption {
+      margin-top: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--color-muted);
+      letter-spacing: 0.01em;
+    }
+    svg { width: 100%; min-width: 960px; display: block; }
+    .drill { cursor: pointer; }
+    .drill .drill-box { transition: stroke 0.15s ease, stroke-width 0.15s ease; }
+    .drill:hover .drill-box,
+    .drill:focus-visible .drill-box { stroke: #bf4520; stroke-width: 1.6; }
+    .drill:hover .drill-badge,
+    .drill:focus-visible .drill-badge { fill: rgba(191,69,32,0.18); }
+    .flow {
+      fill: none;
+      stroke: var(--color-muted);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-dasharray: 3 24;
+      opacity: 0.85;
+      pointer-events: none;
+      animation: flow-dash 3s linear infinite;
+    }
+    .flow-accent { stroke: var(--color-accent); }
+    @keyframes flow-dash { to { stroke-dashoffset: -27; } }
+    @media (prefers-reduced-motion: reduce) { .flow { display: none !important; } }
+    @media print {
+      .drill { cursor: pointer; }
+    .drill .drill-box { transition: stroke 0.15s ease, stroke-width 0.15s ease; }
+    .drill:hover .drill-box,
+    .drill:focus-visible .drill-box { stroke: #bf4520; stroke-width: 1.6; }
+    .drill:hover .drill-badge,
+    .drill:focus-visible .drill-badge { fill: rgba(191,69,32,0.18); }
+    .flow { display: none !important; }
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">π0.5 · SigLIP So400m/14 · openpi/models/siglip.py</p>
+    <a class="crumb" href="index.html">← 返回总览</a>
+    <h1>SigLIP ViT — 视觉编码器 (So400m/14)</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pi05-siglip-title pi05-siglip-desc">
+        <title id="pi05-siglip-title">SigLIP ViT So400m/14 内部结构</title>
+        <desc id="pi05-siglip-desc">SigLIP 视觉编码器：224×224 图像经 14×14 卷积切块并加位置嵌入，经 27 层 ViT 编码块（层归一化、16 头注意力、GELU 前馈、残差），最后零初始化线性头投影为 256×2048 图像 token。</desc>
+        <defs>
+          <marker id="sl-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        </defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <line x1="180" y1="160" x2="234" y2="160" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#sl-arrow)"/>
+        <line class="flow" x1="180" y1="160" x2="234" y2="160" aria-hidden="true"/>
+        <line x1="416" y1="160" x2="470" y2="160" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#sl-arrow)"/>
+        <line class="flow" x1="416" y1="160" x2="470" y2="160" aria-hidden="true"/>
+        <line x1="672" y1="160" x2="722" y2="160" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#sl-arrow)"/>
+        <line class="flow" x1="672" y1="160" x2="722" y2="160" aria-hidden="true"/>
+
+        <rect x="40" y="128" width="140" height="64" rx="6" fill="#f5f5f5"/>
+        <rect x="40" y="128" width="140" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+        <rect x="48" y="134" width="34" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.40)" stroke-width="0.8"/>
+        <text x="65" y="143" fill="rgba(90,101,128,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">INPUT</text>
+        <text x="110" y="168" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">输入图像</text>
+        <text x="110" y="182" fill="#4f5d75" font-size="10" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">224x224 RGB</text>
+
+        <rect x="236" y="128" width="180" height="64" rx="6" fill="#f5f5f5"/>
+        <rect x="236" y="128" width="180" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="244" y="134" width="48" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="268" y="143" fill="rgba(45,49,66,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">EMBED</text>
+        <text x="326" y="168" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">Patch Embed</text>
+        <text x="326" y="182" fill="#4f5d75" font-size="10" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">CONV 14x14 S14 +POSEMB</text>
+
+        <a class="drill" href="pi05_detail_block_vit.html" aria-label="查看单层结构细节">
+          <rect x="472" y="104" width="200" height="112" rx="6" fill="#f5f5f5"/>
+          <rect class="drill-badge" x="652" y="110" width="12" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="rgba(191,69,32,0.6)" stroke-width="0.8"/>
+          <text x="658" y="119" fill="#bf4520" font-size="10" font-weight="600"
+                font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+</text>
+        </a>
+        <rect x="472" y="104" width="200" height="112" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+        <rect x="480" y="110" width="26" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.40)" stroke-width="0.8"/>
+        <text x="493" y="119" fill="rgba(191,69,32,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">x27</text>
+        <text x="572" y="140" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">ViT Block</text>
+        <text x="572" y="156" fill="#4f5d75" font-size="10" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">W1152 · HEADS 16</text>
+        <text x="572" y="178" fill="#5a6580" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">LN -&gt; MHA -&gt; +</text>
+        <text x="572" y="196" fill="#5a6580" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">LN -&gt; MLP GELU 4304 -&gt; +</text>
+
+        <rect x="724" y="128" width="196" height="64" rx="6" fill="#f5f5f5"/>
+        <rect x="724" y="128" width="196" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="732" y="134" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="750" y="143" fill="rgba(45,49,66,0.8)" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">HEAD</text>
+        <text x="822" y="168" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" text-anchor="middle">输出投影</text>
+        <text x="822" y="182" fill="#4f5d75" font-size="10" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">DENSE 2048 · 256 TOK</text>
+      </svg>
+    </div>
+    <p class="caption">So400m/14 · width 1152 · depth 27 · heads 16 · mlp_dim 4304 · ~400M 参数 · 无池化（每图 16×16=256 token）· 输出头 Dense(1152→2048) 零初始化<br>调用处 pi0.py: _siglip.Module(num_classes=2048, pool_type="none")</p>
+  </div>
+</body>
+</html>

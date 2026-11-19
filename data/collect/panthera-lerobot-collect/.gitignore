@@ -1,0 +1,18 @@
+# Python/runtime caches.
+/__pycache__/
+**/__pycache__/
+*.py[cod]
+/.pytest_cache/
+**/.pytest_cache/
+*.egg-info/
+
+# Local environment files.
+.env
+.venv/
+venv/
+/.venv-lerobot/
+.panthera_camera_selection.json
+
+# 本地运行产物。
+/logs/
+/diagnostics/
