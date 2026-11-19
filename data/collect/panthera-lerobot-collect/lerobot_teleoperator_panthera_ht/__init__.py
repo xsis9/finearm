@@ -43,15 +43,22 @@ def _bind_choice_registry(base_config, type_name: str, config_cls):
     config_cls._registered_choice_name = type_name
 
 
-ACTION_KEYS = (
-    "target_joint_1.pos",
-    "target_joint_2.pos",
-    "target_joint_3.pos",
-    "target_joint_4.pos",
-    "target_joint_5.pos",
-    "target_joint_6.pos",
-    "target_gripper.pos",
-)
+# Feature keys come from the arm profile (Phase 2 single-sourcing); the
+# literals are the no-finearm fallback (identical values, die in Phase 4).
+try:
+    from finearm.arms.panthera_ht import PROFILE as _ARM_PROFILE
+
+    ACTION_KEYS = _ARM_PROFILE.action_feature_names
+except ImportError:  # pragma: no cover - legacy fallback outside the repo tree
+    ACTION_KEYS = (
+        "target_joint_1.pos",
+        "target_joint_2.pos",
+        "target_joint_3.pos",
+        "target_joint_4.pos",
+        "target_joint_5.pos",
+        "target_joint_6.pos",
+        "target_gripper.pos",
+    )
 
 
 @dataclass

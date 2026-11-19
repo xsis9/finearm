@@ -32,6 +32,17 @@ jobs:
       - name: Core suite (finearm.core, stdlib only)
         run: python -m pytest tests/core/
 
+  arms-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - name: Arms suite (profiles, daemon mock round-trip, legacy shims)
+        run: python -m pytest tests/arms/
+
   rl-tests:
     runs-on: ubuntu-latest
     steps:

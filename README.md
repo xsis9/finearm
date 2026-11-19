@@ -17,6 +17,7 @@ inference, and RL post-training on top of pre-trained VLA policies
 | `infer/` | Real-time chunked inference client (RTC), model adapters, arm/camera interface |
 | `RL/rlt_panthera/` | Online RL post-training (RL-Token): training loop, replay, learner, serving |
 | `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
+| `src/finearm/arms/` | Arm plugins: `ArmProfile` schema declaration + arm-neutral control daemon (`finearm-daemon --arm <id>`); `panthera_ht` (real) and `mock_twojoint` (extensibility demo) |
 | `configs/` | Machine/arm/model configuration (canonical copies) |
 | `third_party/` | Upstream baseline records for vendored dependencies |
 | `doc/` | Working notes and hardware manuals |
@@ -53,11 +54,28 @@ package is installed elsewhere.
 `finearm.core` needs only a Python ≥ 3.11 standard library; heavier
 dependencies live in the per-domain environments (see each domain's README).
 
+### Arm daemon
+
+The control daemon is arm-neutral; each arm is one plugin directory declaring
+its schema, gains, and adapters:
+
+```bash
+finearm-daemon --arm panthera_ht --mock   # or: python -m panthera_control.cli --mock (legacy path)
+```
+
+Adding an arm = adding `src/finearm/arms/<arm>/` (see `mock_twojoint/` for a
+minimal skeleton); daemon, IPC, and clients pick up different dimensions
+automatically. The legacy `panthera_control.*` import paths keep working as
+forwarding shims during the migration.
+
 ## Testing
 
 ```bash
 # Core suite (pure stdlib, no install needed)
 python -m pytest tests/core/
+
+# Arms suite (profiles, mock daemon round-trip, legacy-shim equivalence)
+python -m pytest tests/arms/
 
 # RL suite (requires: torch, numpy, pytest)
 cd RL/rlt_panthera && python -m pytest
@@ -66,7 +84,7 @@ cd RL/rlt_panthera && python -m pytest
 cd data/collect/panthera-lerobot-collect && python -m pytest tests/
 ```
 
-CI runs lint plus all three suites on every push (`.github/workflows/ci.yml`).
+CI runs lint plus all four suites on every push (`.github/workflows/ci.yml`).
 Hardware is never touched by CI or by the test suites.
 
 ## License

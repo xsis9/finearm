@@ -51,18 +51,26 @@ DEFAULT_REPO_ID = "local/panthera_smolvla_demo"
 DEFAULT_TASK = "panthera teleoperation"
 DEFAULT_CAMERA_TEST_TIMEOUT_S = 3.0
 SUPPORTED_LEROBOT_VERSION = "0.5.1"
-PANTHERA_OBSERVATION_NAMES = (
-    "follower_joint_1.pos", "follower_joint_2.pos", "follower_joint_3.pos",
-    "follower_joint_4.pos", "follower_joint_5.pos", "follower_joint_6.pos",
-    "follower_gripper.pos", "follower_joint_1.vel", "follower_joint_2.vel",
-    "follower_joint_3.vel", "follower_joint_4.vel", "follower_joint_5.vel",
-    "follower_joint_6.vel", "follower_gripper.vel",
-)
-PANTHERA_ACTION_NAMES = (
-    "target_joint_1.pos", "target_joint_2.pos", "target_joint_3.pos",
-    "target_joint_4.pos", "target_joint_5.pos", "target_joint_6.pos",
-    "target_gripper.pos",
-)
+# Snapshot feature names come from the arm profile (Phase 2 single-sourcing);
+# the literals are the no-finearm fallback (identical values, die in Phase 4).
+try:
+    from finearm.arms.panthera_ht import PROFILE as _ARM_PROFILE
+
+    PANTHERA_OBSERVATION_NAMES = _ARM_PROFILE.state_feature_names
+    PANTHERA_ACTION_NAMES = _ARM_PROFILE.action_feature_names
+except ImportError:  # pragma: no cover - legacy fallback outside the repo tree
+    PANTHERA_OBSERVATION_NAMES = (
+        "follower_joint_1.pos", "follower_joint_2.pos", "follower_joint_3.pos",
+        "follower_joint_4.pos", "follower_joint_5.pos", "follower_joint_6.pos",
+        "follower_gripper.pos", "follower_joint_1.vel", "follower_joint_2.vel",
+        "follower_joint_3.vel", "follower_joint_4.vel", "follower_joint_5.vel",
+        "follower_joint_6.vel", "follower_gripper.vel",
+    )
+    PANTHERA_ACTION_NAMES = (
+        "target_joint_1.pos", "target_joint_2.pos", "target_joint_3.pos",
+        "target_joint_4.pos", "target_joint_5.pos", "target_joint_6.pos",
+        "target_gripper.pos",
+    )
 def _default_data_root() -> Path:
     """Dataset hub root: <repo>/data/datasets (two levels above this tool dir).
 
@@ -1151,13 +1159,13 @@ def validate_resume_dataset(root: Path, args: argparse.Namespace) -> None:
     _validate_resume_feature(
         features,
         "observation.state",
-        shape=[14],
+        shape=[len(PANTHERA_OBSERVATION_NAMES)],
         names=list(PANTHERA_OBSERVATION_NAMES),
     )
     _validate_resume_feature(
         features,
         "action",
-        shape=[7],
+        shape=[len(PANTHERA_ACTION_NAMES)],
         names=list(PANTHERA_ACTION_NAMES),
     )
 

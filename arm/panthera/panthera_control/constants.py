@@ -1,59 +1,44 @@
-"""Shared control constants and snapshot schema helpers."""
+"""兼容 shim:常量真身 = finearm.arms.panthera 的 PROFILE/GAINS + finearm.arms.daemon.helpers。
+
+数值与旧 panthera_control/constants.py 逐位一致(Phase 2 迁移,行为等价);
+snapshot schema 现在由 ArmProfile 单点声明。
+"""
 
 from __future__ import annotations
 
-DEFAULT_SOCKET_PATH = "/tmp/panthera_lerobot_control.sock"
-JOINT_COUNT = 6
+from finearm.arms.daemon import helpers as _h
+from finearm.arms.panthera_ht import GAINS as _GAINS
+from finearm.arms.panthera_ht import PROFILE as _PROFILE
 
-KP = [10.0, 21.0, 21.0, 16.0, 13.0, 1.0]
-KD = [1.0, 2.0, 2.0, 0.9, 0.8, 0.1]
-GRIPPER_KP = 4.0
-GRIPPER_KD = 0.4
-FC = [0.15, 0.12, 0.12, 0.12, 0.04, 0.04]
-FV = [0.05, 0.05, 0.05, 0.03, 0.02, 0.02]
-VEL_THRESHOLD = 0.02
-TOR_THRESHOLD = [0.5, 1.0, 1.0, 0.5, 0.3, 0.3]
-TAU_LIMIT = [15.0, 30.0, 30.0, 15.0, 5.0, 5.0]
+DEFAULT_SOCKET_PATH = _PROFILE.socket_path
+JOINT_COUNT = _PROFILE.joint_count
 
-DEFAULT_JOINT_MIN = [-3.14159] * JOINT_COUNT
-DEFAULT_JOINT_MAX = [3.14159] * JOINT_COUNT
-DEFAULT_GRIPPER_MIN = 0.0
-DEFAULT_GRIPPER_MAX = 2.0
+KP = list(_GAINS.follower_kp)
+KD = list(_GAINS.follower_kd)
+GRIPPER_KP = _GAINS.gripper_kp
+GRIPPER_KD = _GAINS.gripper_kd
+FC = list(_GAINS.friction_fc)
+FV = list(_GAINS.friction_fv)
+VEL_THRESHOLD = _GAINS.velocity_threshold
+TOR_THRESHOLD = list(_GAINS.torque_threshold)
+TAU_LIMIT = list(_GAINS.torque_limit)
 
-
-def as_floats(values, length: int) -> list[float]:
-    result = [float(value) for value in values]
-    if len(result) != length:
-        raise ValueError(f"expected {length} values, got {len(result)}")
-    return result
+DEFAULT_JOINT_MIN = [limits.min for limits in _PROFILE.joint_limits]
+DEFAULT_JOINT_MAX = [limits.max for limits in _PROFILE.joint_limits]
+DEFAULT_GRIPPER_MIN = _PROFILE.gripper_range.min
+DEFAULT_GRIPPER_MAX = _PROFILE.gripper_range.max
 
 
-def clamp(values, lower, upper) -> list[float]:
-    return [min(max(float(value), float(lo)), float(hi)) for value, lo, hi in zip(values, lower, upper)]
-
-
-def clip(values, limits) -> list[float]:
-    return [min(max(float(value), -float(limit)), float(limit)) for value, limit in zip(values, limits)]
-
-
-def add(left, right) -> list[float]:
-    return [float(a) + float(b) for a, b in zip(left, right)]
-
-
-def sub(left, right) -> list[float]:
-    return [float(a) - float(b) for a, b in zip(left, right)]
-
-
-def threshold(values, limits) -> list[float]:
-    result = []
-    for value, limit in zip(values, limits):
-        numeric = float(value)
-        result.append(0.0 if abs(numeric) < float(limit) else numeric)
-    return result
+as_floats = _h.as_floats
+clamp = _h.clamp
+clip = _h.clip
+add = _h.add
+sub = _h.sub
+threshold = _h.threshold
 
 
 def zero_joints() -> list[float]:
-    return [0.0] * JOINT_COUNT
+    return _h.zero_joints(JOINT_COUNT)
 
 
 def make_snapshot(
@@ -69,18 +54,16 @@ def make_snapshot(
     sequence,
     loop_timing,
 ) -> dict:
-    state = (
-        as_floats(follower_positions, JOINT_COUNT)
-        + [float(follower_gripper_position)]
-        + as_floats(follower_velocities, JOINT_COUNT)
-        + [float(follower_gripper_velocity)]
+    return _h.make_snapshot(
+        joint_count=JOINT_COUNT,
+        follower_positions=follower_positions,
+        follower_velocities=follower_velocities,
+        follower_gripper_position=follower_gripper_position,
+        follower_gripper_velocity=follower_gripper_velocity,
+        target_positions=target_positions,
+        target_gripper_position=target_gripper_position,
+        diagnostics=diagnostics,
+        timestamp=timestamp,
+        sequence=sequence,
+        loop_timing=loop_timing,
     )
-    action = as_floats(target_positions, JOINT_COUNT) + [float(target_gripper_position)]
-    return {
-        "observation.state": state,
-        "action": action,
-        "diagnostics": dict(diagnostics),
-        "timestamp": float(timestamp),
-        "sequence": int(sequence),
-        "loop_timing": dict(loop_timing),
-    }

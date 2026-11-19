@@ -1,10 +1,9 @@
-"""兼容 shim:驱动层已抽离到 deploy/arm/panthera/panthera_control(2026-11)。
+"""兼容 shim:驱动层真身 = src/finearm/arms(2026-11 抽离,Phase 2 再迁 finearm)。
 
 本包现在只保留采集域自己的模块(collect_cli / sample_coordinator),
-驱动层的 ipc/constants/adapters 经由本目录同名 shim 模块转发,
-包级导出(ControlDaemon/ControlClient 等)也全部转发 —— 旧 import 路径
-`panthera_lerobot_control.*` 继续有效,存量代码无需改动。
-新代码请直接使用 `panthera_control.*`(sys.path 含 deploy/arm/panthera)。
+驱动层经由本目录同名 shim → arm/panthera/panthera_control(再转发)到达
+finearm.arms;旧 import 路径 `panthera_lerobot_control.*` 继续有效。
+新代码请直接使用 `finearm.arms.*`。
 """
 import pathlib
 import sys
