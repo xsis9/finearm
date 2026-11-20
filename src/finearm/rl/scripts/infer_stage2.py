@@ -158,7 +158,9 @@ def main():
                 step_start = time.time()
                 obs = robot.get_observation()
                 state = torch.as_tensor(np.asarray(obs["state"], dtype=np.float32))
-                raw_actions, z_rl = vla.infer(obs)
+                _out = vla.infer(obs)
+                raw_actions = _out.actions
+                z_rl = _out.embeddings["z_rl"]  # algorithm side
                 _last_z = z_rl.numpy()
 
                 if detector is not None and step_counter >= args.auto_critical_start_delay_steps \

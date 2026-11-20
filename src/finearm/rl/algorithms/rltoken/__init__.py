@@ -13,4 +13,8 @@ Modules:
 
 from . import critical, learner, networks  # noqa: F401
 
-__all__ = ["networks", "critical", "learner"]
+# Embedding keys this algorithm consumes from the serving layer (5b): the
+# loop stays key-agnostic; the client validates these against the response.
+REQUIRED_EMBEDDINGS: tuple[str, ...] = ("z_rl",)
+
+__all__ = ["networks", "critical", "learner", "REQUIRED_EMBEDDINGS"]

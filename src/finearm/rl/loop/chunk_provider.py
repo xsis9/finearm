@@ -39,7 +39,7 @@ class PipelinedChunkProvider:
         self._lock = threading.Lock()
         self._trigger = threading.Event()
         self._payload: dict | None = None       # {"obs", "state"} set by main thread
-        self._result: dict | None = None        # {"chunk", "z_rl", "state"}
+        self._result: dict | None = None        # {"inference", "state"} (opaque)
         self._inflight = False
         self._rtts: list[float] = []
         self._running = False
@@ -101,12 +101,11 @@ class PipelinedChunkProvider:
                     break
             time.sleep(0.01)
         t0 = time.perf_counter()
-        actions, z_rl = self._vla.infer(obs)
+        inference = self._vla.infer(obs)
         with self._lock:
             self._rtts.append(time.perf_counter() - t0)
             self._rtts = self._rtts[-30:]
-        return {"chunk": actions.detach(), "z_rl": z_rl.detach(),
-                "state": state.detach().clone()}
+        return {"inference": inference, "state": state.detach().clone()}
 
     def _loop(self) -> None:
         while self._running:
@@ -121,10 +120,10 @@ class PipelinedChunkProvider:
                 self._inflight = True
             t0 = time.perf_counter()
             try:
-                actions, z_rl = self._vla.infer(payload["obs"])
+                inference = self._vla.infer(payload["obs"])
                 rtt = time.perf_counter() - t0
                 with self._lock:
-                    self._result = {"chunk": actions.detach(), "z_rl": z_rl.detach(),
+                    self._result = {"inference": inference,
                                     "state": payload["state"]}
                     self._rtts.append(rtt)
                     self._rtts = self._rtts[-30:]

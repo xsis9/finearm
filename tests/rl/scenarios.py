@@ -28,6 +28,8 @@ from unittest import mock
 
 import torch
 
+from finearm.rl.serving.client import VLAInference
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 SCENARIO_ARGV = {
@@ -109,11 +111,13 @@ class DeterministicVLA:
 
     def infer(self, obs: dict):
         self.calls_control += 1
-        return self._chunk(self._g_control)
+        actions, z_rl = self._chunk(self._g_control)
+        return VLAInference(actions=actions, embeddings={"z_rl": z_rl})
 
     def infer_boundary(self, obs: dict):
         self.calls_boundary += 1
-        return self._chunk(self._g_boundary)
+        actions, z_rl = self._chunk(self._g_boundary)
+        return VLAInference(actions=actions, embeddings={"z_rl": z_rl})
 
 
 def scenario_inputs_available() -> bool:
@@ -141,7 +145,8 @@ def run_scenario(name: str, output_dir: Path) -> dict:
     stdin = io.StringIO(SCENARIO_STDIN[name])
     vla_instances: list[DeterministicVLA] = []
 
-    def make_vla(host, port, task):
+    def make_vla(host, port, task, required_embeddings=("z_rl",)):
+        assert "z_rl" in required_embeddings, required_embeddings
         vla = DeterministicVLA(host, port, task)
         vla_instances.append(vla)
         return vla

@@ -79,6 +79,7 @@ if str(_LEGACY_RL_DIR) not in sys.path:
 # finearm package.
 from finearm.core import paths as _core_paths
 
+from finearm.rl.algorithms.rltoken import REQUIRED_EMBEDDINGS
 from finearm.rl.algorithms.rltoken.critical import CriticalPhaseDetector
 from finearm.rl.algorithms.rltoken.learner import (
     perform_training_update,
@@ -574,7 +575,8 @@ def main():
     vla: VLAClient | None = None
     if not args.dry_run:
         logger.info("Connecting to serve_rlt at %s:%s ...", args.server_host, args.server_port)
-        vla = VLAClient(args.server_host, args.server_port, args.task)
+        vla = VLAClient(args.server_host, args.server_port, args.task,
+                        required_embeddings=REQUIRED_EMBEDDINGS)
         vla.check_same_origin(task=args.task, stage1_step=stage1_step)
         logger.info("serve_rlt metadata: %s",
                     {k: vla.metadata.get(k) for k in
@@ -693,7 +695,9 @@ def main():
         obs = robot.get_observation()
         state = validate_state(obs["state"])
         t0 = time.time()
-        actions, z_rl = vla.infer(obs)
+        probe = vla.infer(obs)
+        actions = probe.actions
+        z_rl = probe.embeddings["z_rl"]  # algorithm side (REQUIRED_EMBEDDINGS)
         infer_ms = (time.time() - t0) * 1000.0
         logger.info(
             "connect_only OK | state=%s | images %s/%s | server %.0fms | actions %s "
@@ -714,7 +718,9 @@ def main():
         connection; reference chunk sliced from the cached ABSOLUTE chunk."""
         if vla is None:
             raise RuntimeError("no VLA client")
-        fresh_actions, z_rl = vla.infer_boundary(obs)
+        fresh = vla.infer_boundary(obs)
+        fresh_actions = fresh.actions
+        z_rl = fresh.embeddings["z_rl"]  # algorithm side (REQUIRED_EMBEDDINGS)
         if raw_actions is None:
             raw_actions = fresh_actions
             raw_action_index = 0
@@ -1261,7 +1267,7 @@ def main():
                         # ── rtc_mode: pipelined chunks, swap at window boundary ──
                         fresh = rtc_provider.take_result()
                         if fresh is not None:
-                            new_chunk = fresh["chunk"]
+                            new_chunk = fresh["inference"].actions
                             j = 0
                             if rtc_last_cmd is not None:
                                 diff = new_chunk[0, :, :6].cpu() - rtc_last_cmd[:6].cpu()
@@ -1276,13 +1282,14 @@ def main():
                             rtc_chunk = new_chunk
                             rtc_cursor = (min(j + len(rtc_blends), rtc_chunk.shape[1] - 1)
                                           if args.rtc_blend > 0 else j)
-                            rtc_z_rl = fresh["z_rl"]
+                            rtc_z_rl = fresh["inference"].embeddings["z_rl"]
                             rtc_state = fresh["state"]
                         if rtc_chunk is None:
                             # Episode seed / post-HIL reseed: synchronous fetch.
                             seeded = rtc_provider.sync_fetch(obs, state_tensor)
-                            rtc_chunk, rtc_z_rl, rtc_state = (seeded["chunk"], seeded["z_rl"],
-                                                              seeded["state"])
+                            rtc_chunk = seeded["inference"].actions
+                            rtc_z_rl = seeded["inference"].embeddings["z_rl"]
+                            rtc_state = seeded["state"]
                             rtc_cursor = 0
                             rtc_blends = []
                         raw_actions = rtc_chunk

@@ -6,8 +6,23 @@ Phase 5a (class body unchanged; ``train_stage2`` now imports it from here).
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 import torch
+
+
+@dataclass
+class VLAInference:
+    """One serve response: actions + algorithm-declared embeddings.
+
+    The loop/framework treats ``embeddings`` as an opaque mapping (it never
+    names keys); the algorithm side fetches what it declared via
+    ``REQUIRED_EMBEDDINGS``. Server-side assembly per declaration is 5c.
+    """
+
+    actions: torch.Tensor                 # (1, horizon, action_dim) ABSOLUTE
+    embeddings: dict[str, torch.Tensor]
 
 
 class VLAClient:
@@ -15,10 +30,12 @@ class VLAClient:
     boundary materialization (never blocks control; server handles each
     connection independently)."""
 
-    def __init__(self, host: str, port: int, task: str):
+    def __init__(self, host: str, port: int, task: str,
+                 required_embeddings: tuple[str, ...] = ("z_rl",)):
         from openpi_client import websocket_client_policy
 
         self._task = task
+        self._required_embeddings = tuple(required_embeddings)
         self._policy = websocket_client_policy.WebsocketClientPolicy(host=host, port=port)
         self._bg_policy = websocket_client_policy.WebsocketClientPolicy(host=host, port=port)
         self.metadata = self._policy.get_server_metadata()
@@ -45,16 +62,29 @@ class VLAClient:
             "prompt": self._task,
         }
 
-    def infer(self, obs: dict) -> tuple[torch.Tensor, torch.Tensor]:
-        """Control path: returns (raw_actions (1,30,7) ABSOLUTE, z_rl (2048,))."""
-        out = self._policy.infer(self._obs_payload(obs))
-        actions = torch.as_tensor(np.asarray(out["actions"]), dtype=torch.float32).unsqueeze(0)
-        z_rl = torch.as_tensor(np.asarray(out["z_rl"]), dtype=torch.float32)
-        return actions, z_rl
+    def _wrap(self, out: dict) -> VLAInference:
+        """Wire dict → VLAInference; every non-action key becomes an embedding.
 
-    def infer_boundary(self, obs: dict) -> tuple[torch.Tensor, torch.Tensor]:
-        """Background path (same result; separate connection)."""
-        out = self._bg_policy.infer(self._obs_payload(obs))
+        Validates the algorithm-declared keys (handshake against the actual
+        payload — until 5c, serve_rlt metadata does not yet declare them).
+        """
         actions = torch.as_tensor(np.asarray(out["actions"]), dtype=torch.float32).unsqueeze(0)
-        z_rl = torch.as_tensor(np.asarray(out["z_rl"]), dtype=torch.float32)
-        return actions, z_rl
+        embeddings = {
+            key: torch.as_tensor(np.asarray(value), dtype=torch.float32)
+            for key, value in out.items() if key != "actions"
+        }
+        missing = [k for k in self._required_embeddings if k not in embeddings]
+        if missing:
+            raise ValueError(
+                f"serve response is missing required embeddings {missing} "
+                f"(got {sorted(embeddings)}); algorithm/server mismatch"
+            )
+        return VLAInference(actions=actions, embeddings=embeddings)
+
+    def infer(self, obs: dict) -> VLAInference:
+        """Control path: raw actions (1,30,7) ABSOLUTE + embeddings dict."""
+        return self._wrap(self._policy.infer(self._obs_payload(obs)))
+
+    def infer_boundary(self, obs: dict) -> VLAInference:
+        """Background path (same result; separate connection)."""
+        return self._wrap(self._bg_policy.infer(self._obs_payload(obs)))
