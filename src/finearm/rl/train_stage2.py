@@ -100,6 +100,7 @@ from finearm.rl.algorithms.rltoken.networks import (
 )
 from finearm.rl.serving.client import VLAClient
 from finearm.rl.loop.chunk_provider import PipelinedChunkProvider
+from finearm.rl.boundaries import ReplayBoundaryCollector
 from finearm.rl.norm import load_quantile_stats
 from finearm.rl.replay import (
     PANTHERA_JOINT_NAMES,
@@ -118,7 +119,6 @@ from finearm.rl.replay import (
     clone_observation,
     materialize_deferred_windows,
     make_vla_reference_chunk,
-    order_episode_transitions,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -737,6 +737,7 @@ def main():
         if replay is not None:
             shutil.copyfile(restore_source, Path(replay._journal_path))
             replay._restore_from_journal()
+    boundary_collector = ReplayBoundaryCollector(replay) if replay is not None else None
     if replay is not None and resume_checkpoint is not None:
         restored = replay.stats()["adds_total"]
         if restored != resume_checkpoint["replay_entries"]:
@@ -1851,18 +1852,14 @@ def main():
                     logger.info("  Stride-2 replay: +%d overlapping (total %d).",
                                 added, len(episode_transitions))
 
-            episode_transitions[:] = order_episode_transitions(episode_transitions)
-            if episode_transitions:
-                terminal_indices = [i for i, t in enumerate(episode_transitions) if t.done]
-                if not terminal_indices and not SHUTDOWN and not EMERGENCY_STOP \
-                        and not robot_faulted:
-                    episode_transitions[-1].done = True
-                    terminal_indices = [len(episode_transitions) - 1]
-                for idx in terminal_indices:
-                    terminal = episode_transitions[idx]
-                    terminal.rewards[terminal.executed_steps - 1] = reward
-            for transition in episode_transitions:
-                replay.add_transition(transition)
+            # Boundary seam (5b): ordering, terminal reward stamping, and the
+            # durable journal append live in the collector now — golden-locked.
+            boundary_collector.commit_episode(
+                episode_transitions,
+                reward=reward,
+                faulted=robot_faulted,
+                interrupted=SHUTDOWN or EMERGENCY_STOP,
+            )
 
             episode_rewards.append(reward)
             episode_interventions.append(intervention_steps)
