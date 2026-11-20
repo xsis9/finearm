@@ -9,7 +9,14 @@
 # ---- 第三方 vendored(refactor Phase 0 再从训练机同步 openpi 修改版正式入库) ----
 /arm/panthera/sdk/
 /arm/panthera/LiteArm-A1/
-/models/
+/models/*
+!/models/openpi/
+/models/openpi/.venv/
+/models/openpi/checkpoints/
+/models/openpi/data/
+/models/openpi/images/
+/models/openpi/__pycache__/
+
 /RL/RL-Token-Pi05-open/
 
 # ---- Python ----

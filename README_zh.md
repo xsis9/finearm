@@ -22,6 +22,7 @@ LeRobot 插件包。**加一条臂 / 加一个模型适配器 / 加一个 RL 算
 | `src/finearm/infer/` | 模型适配器(pi05 / lingbot / mock)+ 分块执行器:`RTCExecutor`(流水线)与 `StopAndGoExecutor`;`finearm-infer --exec-mode {rtc,stop-and-go}`;采集后端 `robot_interface`(daemon IPC + 相机) |
 | `src/finearm/rl/` | Stage-2 在线 RL:`rltoken` 算法(networks/critical/learner)、replay + journal、边界接缝(`WindowReceipt`/`BoundaryCollector`)、`EpisodeRunner`、serving(serve_rlt + client)、envs(RobotInterface 契约 + panthera 后端)、离线流水线 |
 | `src/finearm/data/` | 采集方法即插件:`teleop`(LeRobot 原生,`--arm` 参数化)与 `dagger` 占位;`finearm-collect --method teleop` |
+| `models/openpi/` | vendored 的 openpi 修改版(上游 `215abfb` + panthera 补丁:`panthera_policy`、`pi05_panthera_p3` 配置、lerobot-0.5.1/numpy-2/py3.12 兼容、评估脚本);溯源见 `third_party/` |
 | `configs/` | 机器/臂/模型配置(权威副本) |
 | `third_party/` | vendored 依赖的上游基线记录 |
 | `doc/` | 工作笔记与硬件手册 |
@@ -129,8 +130,9 @@ finearm-collect --method teleop --live \
 
 ### 3 · 微调(外部交接)
 
-SFT/微调在训练机的模型栈上跑(π0.5 用 openpi,lingbot 用 lingbot 栈)——
-不在本仓库。让采集数据可训、产物 checkpoint 可服务的交接契约:
+SFT/微调在训练机上跑(修改版 openpi 源码已 vendored 在 `models/openpi/`——
+与上游的精确差异见 `third_party/patches/`;lingbot 栈仍在外部)。
+让采集数据可训、产物 checkpoint 可服务的交接契约:
 
 1. 数据集目录(LeRobot v3)是唯一训练输入;
 2. 采集时记录的 **task 字符串**必须与训练 prompt 逐字一致——serve/infer

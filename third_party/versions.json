@@ -4,7 +4,8 @@
     "upstream": "https://github.com/Physical-Intelligence/openpi",
     "baseline_commit": "215abfb217dbac7d5f1273282331b9b1866c0479",
     "local_path": "models/openpi",
-    "local_state": "pristine upstream checkout plus a local patch to packages/openpi-client/pyproject.toml",
-    "note": "The training machine holds the modified fork (panthera_policy, pi05_panthera_p3 config) that will become the canonical in-tree copy; sync deferred to a later refactor phase."
+    "local_state": "vendored modified copy (2026-11-20, synced from the training machine's working tree): panthera_policy + LeRobotPantheraDataConfig (pi05_panthera / pi05_panthera_p3), lerobot-0.5.1 & numpy-2 & py3.12 compat, panthera eval/plot/ablation scripts, norm-stats assets",
+    "patch": "third_party/patches/openpi-panthera.patch",
+    "note": "machine-absolute paths from the training tree were neutralized to tree-relative equivalents at vendoring time (see patch header); artifacts (checkpoints/.venv/data/images) stay gitignored"
   }
 }

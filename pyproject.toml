@@ -29,6 +29,9 @@ build-backend = "hatchling.build"
 packages = ["src/finearm"]
 
 [tool.ruff]
+# vendored upstream tree — its style is not our lint surface
+extend-exclude = ["models/openpi"]
+
 line-length = 110
 target-version = "py311"
 

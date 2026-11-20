@@ -24,6 +24,7 @@ one plugin directory, nothing else changes.
 | `src/finearm/infer/` | Model adapters (pi05 / lingbot / mock) + chunk executors: `RTCExecutor` (pipelined) and `StopAndGoExecutor`; `finearm-infer --exec-mode {rtc,stop-and-go}`; acquisition `robot_interface` (daemon IPC + cameras) |
 | `src/finearm/rl/` | Stage-2 online RL: `rltoken` algorithm (networks/critical/learner), replay + journal, boundary seam (`WindowReceipt`/`BoundaryCollector`), `EpisodeRunner`, serving (serve_rlt + client), envs (RobotInterface contract + panthera backend), offline pipelines |
 | `src/finearm/data/` | Collection methods as plugins: `teleop` (LeRobot-native, `--arm` parameterized) and the `dagger` stub; `finearm-collect --method teleop` |
+| `models/openpi/` | Vendored modified openpi (upstream `215abfb` + panthera patch: `panthera_policy`, `pi05_panthera_p3` config, lerobot-0.5.1/numpy-2/py3.12 compat, eval scripts); provenance in `third_party/` |
 | `configs/` | Machine/arm/model configuration (canonical copies) |
 | `third_party/` | Upstream baseline records for vendored dependencies |
 | `doc/` | Working notes and hardware manuals |
@@ -143,8 +144,9 @@ methods, parameter tables, batch SOP) is
 
 ### 3 · Fine-tune (external handoff)
 
-SFT/fine-tuning runs on the training machine's model stacks (openpi for
-π0.5, the lingbot stack for lingbot) — not in this repo. The handoff
+SFT/fine-tuning runs on the training machine (the modified openpi source
+is vendored at `models/openpi/` — see `third_party/patches/` for the exact
+delta vs upstream; the lingbot stack stays external). The handoff
 contract that makes a collected dataset trainable and the resulting
 checkpoint servable:
 
