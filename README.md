@@ -1,5 +1,7 @@
 # finearm
 
+[English](README.md) · [中文](README_zh.md)
+
 Robot-arm VLA fine-tuning framework: teleop data collection, real-time chunked
 inference, and RL post-training on top of pre-trained VLA policies
 (pi0.5 / Panthera-HT arm).
@@ -20,7 +22,7 @@ one plugin directory, nothing else changes.
 | `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
 | `src/finearm/arms/` | Arm plugins: `ArmProfile` schema declaration + arm-neutral control daemon (`finearm-daemon --arm <id>`); `panthera_ht` (real) and `mock_twojoint` (extensibility demo) |
 | `src/finearm/infer/` | Model adapters (pi05 / lingbot / mock) + chunk executors: `RTCExecutor` (pipelined) and `StopAndGoExecutor`; `finearm-infer --exec-mode {rtc,stop-and-go}`; acquisition `robot_interface` (daemon IPC + cameras) |
-| `src/finearm/rl/` | Stage-2 online RL: `rltoken` algorithm (networks/critical/learner), replay + journal, serving (serve_rlt + client), envs (RobotInterface contract + panthera backend), offline pipelines; `RL/rlt_panthera` keeps shim entry points for campaign continuity |
+| `src/finearm/rl/` | Stage-2 online RL: `rltoken` algorithm (networks/critical/learner), replay + journal, boundary seam (`WindowReceipt`/`BoundaryCollector`), `EpisodeRunner`, serving (serve_rlt + client), envs (RobotInterface contract + panthera backend), offline pipelines |
 | `src/finearm/data/` | Collection methods as plugins: `teleop` (LeRobot-native, `--arm` parameterized) and the `dagger` stub; `finearm-collect --method teleop` |
 | `configs/` | Machine/arm/model configuration (canonical copies) |
 | `third_party/` | Upstream baseline records for vendored dependencies |
@@ -40,7 +42,7 @@ highest first:
 
 Layer 4 (lowest) is repo-relative defaults resolved by `finearm.core.paths`:
 `data/datasets` (dataset hub), `arm/panthera/sdk` (vendor SDK),
-`infer/robot_interface.py` (acquisition interface), `/tmp` (daemon socket
+`finearm/infer/robot_interface` (acquisition backend), `/tmp` (daemon socket
 dir). `FINEARM_ROOT` points at a checkout from an environment where the
 package is installed elsewhere.
 
@@ -64,13 +66,12 @@ The control daemon is arm-neutral; each arm is one plugin directory declaring
 its schema, gains, and adapters:
 
 ```bash
-finearm-daemon --arm panthera_ht --mock   # or: python -m panthera_control.cli --mock (legacy path)
+finearm-daemon --arm panthera_ht --mock
 ```
 
 Adding an arm = adding `src/finearm/arms/<arm>/` (see `mock_twojoint/` for a
 minimal skeleton); daemon, IPC, and clients pick up different dimensions
-automatically. The legacy `panthera_control.*` import paths keep working as
-forwarding shims during the migration.
+automatically.
 
 ## The pipeline: collect → fine-tune → serve → infer
 
@@ -220,7 +221,7 @@ executor box: `python -m finearm.infer.robot_interface --selftest --dump-obs /tm
 # Core suite (pure stdlib, no install needed)
 python -m pytest tests/core/
 
-# Arms suite (profiles, mock daemon round-trip, legacy-shim equivalence)
+# Arms suite (profiles, daemon mock round-trip)
 python -m pytest tests/arms/
 
 # Infer suite (executor math, RTC golden comparison vs pre-refactor, stop-and-go)
