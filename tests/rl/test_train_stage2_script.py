@@ -13,8 +13,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+# Import paths (src/, RL/rlt_panthera, its scripts/) come from tests/rl/conftest.py.
 
 import train_stage2  # noqa: E402
 

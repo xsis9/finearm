@@ -1498,8 +1498,12 @@ def main():
                             except ValueError:
                                 pass
                         if starved_steps:
+                            # Fixed in 5b: the second %d arg was missing —
+                            # every starvation warning misformatted (and raised
+                            # under pytest's logging capture).
                             logger.warning("[rtc] chunk starved for %d/%d steps this window "
-                                           "(network jitter); held last target.", starved_steps)
+                                           "(network jitter); held last target.",
+                                           starved_steps, rlt_config.n_action_steps_rl)
                     elif args.replan_every_window:
                         action_cache.clear()
                         rtc_chunk = None

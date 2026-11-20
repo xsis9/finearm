@@ -86,8 +86,9 @@ python -m pytest tests/infer/
 # Collect suite (collector registry, dagger stub, --arm parameterization)
 python -m pytest tests/data/
 
-# RL suite (requires: torch, numpy, pytest)
-cd RL/rlt_panthera && python -m pytest
+# RL suite (requires: torch, numpy, matplotlib, pytest; golden harness and
+# real-input tests are env-gated and skip without machine-local inputs)
+python -m pytest tests/rl/
 
 # Data-collection suite (requires: lerobot==0.5.1, pytest)
 cd data/collect/panthera-lerobot-collect && python -m pytest tests/

@@ -9,7 +9,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# Import paths (src/, RL/rlt_panthera, its scripts/) come from tests/rl/conftest.py.
+REPO_ROOT = Path(__file__).resolve().parents[2] / "RL" / "rlt_panthera"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import plot_metrics  # noqa: E402

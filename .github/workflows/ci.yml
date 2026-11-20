@@ -74,9 +74,8 @@ jobs:
           python-version: "3.12"
       - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install numpy pytest matplotlib
-      - name: RL suite (rlt_panthera)
-        working-directory: RL/rlt_panthera
-        run: python -m pytest
+      - name: RL suite (rltoken, replay, train_stage2, shims, golden harness)
+        run: python -m pytest tests/rl/
 
   data-tests:
     runs-on: ubuntu-latest
