@@ -200,9 +200,10 @@ rsync -av <user>@<trainer>:<openpi-tree>/checkpoints/pi05_panthera_p3/<exp>/ \
     checkpoints/pi05_panthera_p3/<exp>/
 
 uv run scripts/serve_policy.py \
-    policy.config=pi05_panthera_p3 \
-    policy.dir=checkpoints/pi05_panthera_p3/<exp>/<step>
-# serves on port 8000; add record=True while debugging (logs every request's
+    policy:checkpoint \
+    --policy.config pi05_panthera_p3 \
+    --policy.dir checkpoints/pi05_panthera_p3/<exp>/<step>
+# serves on port 8000; add --record while debugging (logs every request's
 # obs/actions under policy_records/). Norm-stats assets ship with the repo.
 ```
 
