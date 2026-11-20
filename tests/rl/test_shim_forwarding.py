@@ -62,8 +62,13 @@ def test_robot_and_script_identity() -> None:
     assert train_stage2 is new_t2
     # Names the console/loop code is known to reach through the old path:
     for name in ("ConsoleInputManager", "PipelinedChunkProvider", "VLAClient",
-                 "load_robot", "PANTHERA_JOINT_NAMES", "signal_handler"):
+                 "load_robot", "PANTHERA_JOINT_NAMES"):
         assert hasattr(train_stage2, name), name
+    # Console key state + handlers live in finearm.rl.loop.console since 5b.
+    from finearm.rl.loop import console as console_state
+    for name in ("SHUTDOWN", "EMERGENCY_STOP", "CRITICAL_PHASE_ACTIVE",
+                 "signal_handler", "register_signal_handlers"):
+        assert hasattr(console_state, name), name
 
 
 def test_joint_names_single_sourced() -> None:

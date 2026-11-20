@@ -99,7 +99,12 @@ from finearm.rl.algorithms.rltoken.networks import (
     RLTokenEncoder,
 )
 from finearm.rl.serving.client import VLAClient
+from finearm.rl.loop import console
 from finearm.rl.loop.chunk_provider import PipelinedChunkProvider
+from finearm.rl.loop.console import (
+    ConsoleInputManager,
+    register_signal_handlers,
+)
 from finearm.rl.boundaries import ReplayBoundaryCollector
 from finearm.rl.norm import load_quantile_stats
 from finearm.rl.replay import (
@@ -123,187 +128,6 @@ from finearm.rl.replay import (
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
-
-# ── Global console state (single stdin thread owns all writes) ───────────────
-SHUTDOWN = False
-EMERGENCY_STOP = False
-ACTOR_ENABLED = False
-SKIP_EPISODE = False
-FINISH_EPISODE = False
-CRITICAL_PHASE_ACTIVE = False
-CRITICAL_MANUAL_OVERRIDE_AT = 0.0
-HIL_FORCE_RESUME = False
-HIL_TOGGLE_REQUESTED = False
-POSITION_TOGGLE_REQUESTED = False
-POSITIONING_STATE = "off"
-
-
-class ConsoleInputManager:
-    """Own stdin in one thread so safety keys and reward prompts never race.
-
-    Ported verbatim from the reference (SO-101 leader comments dropped); see
-    the reference docstring for the auto-critical 'a' semantics."""
-
-    def __init__(self, stream=None, *, auto_critical: bool = False):
-        self._stream = stream if stream is not None else sys.stdin
-        self._responses: deque[str] = deque()
-        self._condition = threading.Condition()
-        self._running = False
-        self._thread: threading.Thread | None = None
-        self._last_toggle_time = 0.0
-        self._auto_critical = bool(auto_critical)
-
-    def start(self) -> None:
-        if self._running:
-            return
-        self._running = True
-        self._thread = threading.Thread(target=self._loop, daemon=True)
-        self._thread.start()
-
-    def stop(self) -> None:
-        self._running = False
-        with self._condition:
-            self._condition.notify_all()
-        if self._thread:
-            self._thread.join(timeout=0.2)
-
-    def _loop(self) -> None:
-        global EMERGENCY_STOP, SHUTDOWN, ACTOR_ENABLED, SKIP_EPISODE, FINISH_EPISODE
-        global CRITICAL_PHASE_ACTIVE, HIL_FORCE_RESUME, HIL_TOGGLE_REQUESTED
-        global CRITICAL_MANUAL_OVERRIDE_AT, POSITION_TOGGLE_REQUESTED
-        while self._running and not SHUTDOWN:
-            try:
-                line = self._stream.readline()
-            except Exception:
-                return
-            if not line:
-                time.sleep(0.05)
-                continue
-            value = line.strip().lower()
-            if value.startswith("e"):
-                EMERGENCY_STOP = True
-                logger.warning("[KEY] EMERGENCY STOP requested (press 'e')")
-                print("[KEY] EMERGENCY STOP", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                return
-            if value.startswith("q"):
-                SHUTDOWN = True
-                logger.info("[KEY] Graceful quit requested (press 'q')")
-                print("[KEY] Quit requested", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                return
-            if value.startswith("a"):
-                if ACTOR_ENABLED:
-                    ACTOR_ENABLED = False
-                    logger.info("[KEY] Actor mode OFF (press 'a' to re-enable)")
-                    print("[KEY] Actor OFF", flush=True)
-                elif CRITICAL_PHASE_ACTIVE or self._auto_critical:
-                    ACTOR_ENABLED = True
-                    logger.info("[KEY] Actor mode ON")
-                    print("[KEY] Actor ON", flush=True)
-                else:
-                    logger.info("[KEY] Actor mode requires the critical phase: press 'c' first, then 'a'")
-                    print("[KEY] Actor needs the critical phase (press 'c' first)", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                continue
-            if value.startswith("g"):
-                SKIP_EPISODE = True
-                print("[KEY] Skip episode", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                continue
-            if value.startswith("f"):
-                FINISH_EPISODE = True
-                print("[KEY] Finish episode early", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                continue
-            if value.startswith("c"):
-                CRITICAL_PHASE_ACTIVE = not CRITICAL_PHASE_ACTIVE
-                CRITICAL_MANUAL_OVERRIDE_AT = time.time()
-                print(f"[KEY] Critical {'ON' if CRITICAL_PHASE_ACTIVE else 'OFF'}", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                continue
-            if value.startswith("s"):
-                if not HIL_FORCE_RESUME:
-                    HIL_FORCE_RESUME = True
-                    print("[KEY] HIL force-resume", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                continue
-            if value.startswith("h"):
-                now = time.monotonic()
-                if now - self._last_toggle_time >= 1.0:
-                    self._last_toggle_time = now
-                    HIL_TOGGLE_REQUESTED = True
-                    print("[KEY] HIL toggle", flush=True)
-                else:
-                    print("[KEY] HIL toggle debounced", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                continue
-            if value.startswith("p"):
-                POSITION_TOGGLE_REQUESTED = True
-                print(f"[KEY] Positioning toggle [state={POSITIONING_STATE}]", flush=True)
-                with self._condition:
-                    self._condition.notify_all()
-                continue
-            with self._condition:
-                self._responses.append(value)
-                self._condition.notify_all()
-
-    def prompt_episode_reward(self) -> tuple[float, bool, bool]:
-        print("\nWas this episode successful? [y/n/d(iscard)/q(uit)]: ", end="", flush=True)
-        while not SHUTDOWN and not EMERGENCY_STOP:
-            with self._condition:
-                if not self._responses:
-                    self._condition.wait(timeout=0.1)
-                    continue
-                response = self._responses.popleft()
-            if response in ("y", "yes", "1"):
-                return 1.0, True, False
-            if response in ("n", "no", "0"):
-                return 0.0, True, False
-            if response in ("d", "discard"):
-                return 0.0, True, True
-            if response in ("q", "quit"):
-                return 0.0, False, False
-            print("  Please enter 'y', 'n', 'd', or 'q': ", end="", flush=True)
-        return 0.0, False, False
-
-    def prompt_hil_resolution(self) -> str:
-        print("\nHuman control paused. [y] success / [n] failure / [r] resume / [q] quit: ",
-              end="", flush=True)
-        while not SHUTDOWN and not EMERGENCY_STOP:
-            with self._condition:
-                if not self._responses:
-                    self._condition.wait(timeout=0.1)
-                    continue
-                response = self._responses.popleft()
-            if response in ("y", "yes", "1"):
-                return "success"
-            if response in ("n", "no", "0"):
-                return "failure"
-            if response in ("r", "resume"):
-                return "resume"
-            if response in ("q", "quit"):
-                return "quit"
-            print("  Please enter 'y', 'n', 'r', or 'q': ", end="", flush=True)
-        return "quit"
-
-
-def signal_handler(sig, frame):
-    global SHUTDOWN
-    logger.info("Shutdown signal received. Finishing current episode...")
-    SHUTDOWN = True
-
-
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
 
 
 # ── Critical-phase logging (Phase 5 classifier training data) ────────────────
@@ -587,9 +411,7 @@ def load_robot(module_name: str, *, dummy: bool):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 def main():
-    global SHUTDOWN, EMERGENCY_STOP, SKIP_EPISODE, FINISH_EPISODE, CRITICAL_PHASE_ACTIVE
-    global HIL_FORCE_RESUME, HIL_TOGGLE_REQUESTED, POSITION_TOGGLE_REQUESTED, POSITIONING_STATE
-    global ACTOR_ENABLED
+    register_signal_handlers()
 
     args = parse_args()
     if args.control_fps <= 0:
@@ -766,7 +588,7 @@ def main():
         return
     robot.connect()
 
-    console = ConsoleInputManager(auto_critical=bool(args.auto_critical))
+    console_mgr = ConsoleInputManager(auto_critical=bool(args.auto_critical))
 
     rtc_provider = None
     if args.rtc_mode:
@@ -774,7 +596,7 @@ def main():
         rtc_provider.start()
         logger.info("[rtc] pipelined chunk provider started (k=%s, blend=%d)",
                     args.rtc_k or "adaptive", args.rtc_blend)
-    console.start()
+    console_mgr.start()
 
     actor_relative_limit = parse_relative_limit(args.actor_max_relative_target, PANTHERA_JOINT_NAMES)
     if args.actor_blend_beta != 1.0 or args.actor_ema_alpha != 1.0:
@@ -789,7 +611,6 @@ def main():
     actor_ema_state: torch.Tensor | None = None
 
     def read_robot_observation(context: str) -> dict | None:
-        global SHUTDOWN
         nonlocal observation_faulted, observation_fault_reason, robot_faulted
         if observation_faulted:
             return None
@@ -808,7 +629,7 @@ def main():
             observation_faulted = True
             observation_fault_reason = f"{context}: {exc}"
             robot_faulted = True
-            SHUTDOWN = True
+            console.SHUTDOWN = True
             logger.error("FATAL observation fault (%s); stopping without further commands.",
                          observation_fault_reason)
             return None
@@ -823,7 +644,7 @@ def main():
 
     def send_validated_action(target_deg: torch.Tensor, source: str) -> torch.Tensor | None:
         nonlocal last_valid_target, robot_faulted
-        if robot_faulted or observation_faulted or EMERGENCY_STOP:
+        if robot_faulted or observation_faulted or console.EMERGENCY_STOP:
             return None
         values = target_deg.detach().float().cpu().numpy()
         if values.shape != (action_dim,) or not np.isfinite(values).all():
@@ -916,7 +737,7 @@ def main():
 
     def training_update() -> bool:
         nonlocal total_updates
-        if args.vla_only or SHUTDOWN or EMERGENCY_STOP:
+        if args.vla_only or console.SHUTDOWN or console.EMERGENCY_STOP:
             return False
         with training_lock:
             if len(buffer) < args.batch_size:
@@ -944,7 +765,7 @@ def main():
             return True
 
     def training_worker() -> None:
-        while not training_stop.is_set() and not SHUTDOWN and not EMERGENCY_STOP:
+        while not training_stop.is_set() and not console.SHUTDOWN and not console.EMERGENCY_STOP:
             if args.vla_only or completed_episode < args.warmup_episodes:
                 time.sleep(0.05)
                 continue
@@ -1067,16 +888,16 @@ def main():
 
     try:
         for episode in range(start_episode, args.max_episodes + 1):
-            if SHUTDOWN or EMERGENCY_STOP:
+            if console.SHUTDOWN or console.EMERGENCY_STOP:
                 break
             print(f"\nEpisode {episode}/{args.max_episodes}", flush=True)
             logger.info("Episode %d | buffer=%d (human=%d) | updates=%d",
                         episode, len(buffer), buffer.human_count, total_updates)
 
-            SKIP_EPISODE = False
-            FINISH_EPISODE = False
-            CRITICAL_PHASE_ACTIVE = False
-            # NOTE: ACTOR_ENABLED deliberately persists across episodes
+            console.SKIP_EPISODE = False
+            console.FINISH_EPISODE = False
+            console.CRITICAL_PHASE_ACTIVE = False
+            # NOTE: console.ACTOR_ENABLED deliberately persists across episodes
             # (reference-project behavior): press 'a' once and the actor
             # takes over every critical phase until 'a' is pressed again.
             episode_actor_executed = False
@@ -1242,21 +1063,21 @@ def main():
 
             # ── Pre-episode manual positioning (NOT HIL, never replayed) ──
             if args.manual_positioning:
-                POSITIONING_STATE = "waiting"
-                if not POSITION_TOGGLE_REQUESTED:
+                console.POSITIONING_STATE = "waiting"
+                if not console.POSITION_TOGGLE_REQUESTED:
                     logger.info("Episode %d: press 'p' to position manually, 'p' again to start.",
                                 episode)
-                    while not SHUTDOWN and not EMERGENCY_STOP and not POSITION_TOGGLE_REQUESTED:
+                    while not console.SHUTDOWN and not console.EMERGENCY_STOP and not console.POSITION_TOGGLE_REQUESTED:
                         time.sleep(0.05)
-                    if SHUTDOWN or EMERGENCY_STOP:
+                    if console.SHUTDOWN or console.EMERGENCY_STOP:
                         break
-                POSITION_TOGGLE_REQUESTED = False
-                POSITIONING_STATE = "active"
+                console.POSITION_TOGGLE_REQUESTED = False
+                console.POSITIONING_STATE = "active"
                 positioning_active = True
                 logger.info("Positioning active (human controls the arm); press 'p' to start the episode.")
-                while positioning_active and not SHUTDOWN and not EMERGENCY_STOP:
-                    if POSITION_TOGGLE_REQUESTED:
-                        POSITION_TOGGLE_REQUESTED = False
+                while positioning_active and not console.SHUTDOWN and not console.EMERGENCY_STOP:
+                    if console.POSITION_TOGGLE_REQUESTED:
+                        console.POSITION_TOGGLE_REQUESTED = False
                         positioning_active = False
                         break
                     human_cmd = robot.latest_human_action()
@@ -1264,8 +1085,8 @@ def main():
                         send_validated_action(torch.as_tensor(np.asarray(human_cmd, dtype=np.float32)),
                                               "POSITION")
                     time.sleep(target_dt)
-                POSITIONING_STATE = "off"
-                if SHUTDOWN or EMERGENCY_STOP:
+                console.POSITIONING_STATE = "off"
+                if console.SHUTDOWN or console.EMERGENCY_STOP:
                     break
                 logger.info("Positioning finished; starting the VLA episode.")
 
@@ -1277,15 +1098,15 @@ def main():
                 raise ValueError("--steps_per_episode must be at least one window")
 
             for step in range(max_rollout_blocks):
-                if SHUTDOWN or EMERGENCY_STOP or SKIP_EPISODE or FINISH_EPISODE:
+                if console.SHUTDOWN or console.EMERGENCY_STOP or console.SKIP_EPISODE or console.FINISH_EPISODE:
                     break
                 step_start = time.time()
 
                 # ── HIL entry (interface handles takeover smoothing) ──
                 takeover_requested, _ = robot.poll_human()
-                takeover.latch(takeover_requested or HIL_TOGGLE_REQUESTED)
-                if not human_active and (takeover.pending or HIL_TOGGLE_REQUESTED):
-                    HIL_TOGGLE_REQUESTED = False
+                takeover.latch(takeover_requested or console.HIL_TOGGLE_REQUESTED)
+                if not human_active and (takeover.pending or console.HIL_TOGGLE_REQUESTED):
+                    console.HIL_TOGGLE_REQUESTED = False
                     snapshot = capture_boundary_snapshot("HIL entry", episode_step_counter)
                     if snapshot is None:
                         break
@@ -1309,10 +1130,10 @@ def main():
                         start_hil_materialization()
                         logger.info("HIL active (hardware human control; 's'/'h' to resume policy)")
 
-                force_resume = HIL_FORCE_RESUME or HIL_TOGGLE_REQUESTED
+                force_resume = console.HIL_FORCE_RESUME or console.HIL_TOGGLE_REQUESTED
                 if force_resume:
-                    HIL_FORCE_RESUME = False
-                    HIL_TOGGLE_REQUESTED = False
+                    console.HIL_FORCE_RESUME = False
+                    console.HIL_TOGGLE_REQUESTED = False
                     logger.info("HIL force-resume by operator ('s'/'h'); exiting human control.")
                 if human_active and (robot.human_finished() or force_resume):
                     if flush_deferred_hil_windows(wait=True):
@@ -1334,11 +1155,11 @@ def main():
                         human_boundary = start_snapshot
                     if start_snapshot is None:
                         break
-                    if CRITICAL_PHASE_ACTIVE != _last_critical_seen:
-                        direction = "on" if CRITICAL_PHASE_ACTIVE else "off"
+                    if console.CRITICAL_PHASE_ACTIVE != _last_critical_seen:
+                        direction = "on" if console.CRITICAL_PHASE_ACTIVE else "off"
                         if critical_recorder is not None:
                             critical_recorder.record_toggle(episode, episode_step_counter,
-                                                            CRITICAL_PHASE_ACTIVE)
+                                                            console.CRITICAL_PHASE_ACTIVE)
                         if critical_frames_dir is not None:
                             save_critical_transition(
                                 critical_frames_dir, ("base_image", "wrist_image"),
@@ -1352,7 +1173,7 @@ def main():
                                 with stride_mt_lock:
                                     stride_pending.append(terminal_snapshot)
                                 start_stride_materialization()
-                        _last_critical_seen = CRITICAL_PHASE_ACTIVE
+                        _last_critical_seen = console.CRITICAL_PHASE_ACTIVE
 
                     human_actions = []
                     for _ in range(rlt_config.n_action_steps_rl):
@@ -1361,7 +1182,7 @@ def main():
                             logger.warning("No fresh human sample; ending HUMAN chunk early.")
                             break
                         target_deg = torch.as_tensor(np.asarray(human_cmd, dtype=np.float32))
-                        if CRITICAL_PHASE_ACTIVE:
+                        if console.CRITICAL_PHASE_ACTIVE:
                             if critical_step_counter is None:
                                 critical_step_counter = 0
                             if critical_step_counter % replay_stride == 0:
@@ -1375,12 +1196,12 @@ def main():
                                         start_stride_materialization()
                         actual = send_validated_action(target_deg, "HUMAN")
                         if actual is None:
-                            SHUTDOWN = True
+                            console.SHUTDOWN = True
                             break
                         normalized = normalize_action(actual.unsqueeze(0)).squeeze(0)
                         human_actions.append(normalized)
                         intervention_steps += 1
-                        if CRITICAL_PHASE_ACTIVE:
+                        if console.CRITICAL_PHASE_ACTIVE:
                             if critical_step_counter is None:
                                 critical_step_counter = 0
                             step_records.append(StepRecord(
@@ -1393,13 +1214,13 @@ def main():
                             time.sleep(remaining)
                         step_start = time.time()
 
-                    if SHUTDOWN or not human_actions:
+                    if console.SHUTDOWN or not human_actions:
                         break
                     end_snapshot = capture_boundary_snapshot("HIL chunk boundary",
                                                              episode_step_counter)
                     if end_snapshot is None:
                         break
-                    if collect_hil_data and CRITICAL_PHASE_ACTIVE:
+                    if collect_hil_data and console.CRITICAL_PHASE_ACTIVE:
                         deferred_windows.append(DeferredExecutionWindow(
                             start=start_snapshot, end=end_snapshot, actions=human_actions,
                             sources=[int(TransitionSource.HUMAN)] * len(human_actions),
@@ -1421,14 +1242,14 @@ def main():
                         critical_detector is not None
                         and episode_step_counter >= args.auto_critical_start_delay_steps
                         and not (args.auto_critical_once and _auto_fired_once
-                                 and not CRITICAL_PHASE_ACTIVE)
-                        and time.time() - CRITICAL_MANUAL_OVERRIDE_AT >= args.auto_critical_override_cooldown
+                                 and not console.CRITICAL_PHASE_ACTIVE)
+                        and time.time() - console.CRITICAL_MANUAL_OVERRIDE_AT >= args.auto_critical_override_cooldown
                     )
                     if _auto_armed and _last_z_rl is not None:
                         desired = critical_detector.update(
                             _last_z_rl, normalize_state(state_tensor)[:state_dim].numpy())
-                        if desired is not None and desired != CRITICAL_PHASE_ACTIVE:
-                            CRITICAL_PHASE_ACTIVE = desired
+                        if desired is not None and desired != console.CRITICAL_PHASE_ACTIVE:
+                            console.CRITICAL_PHASE_ACTIVE = desired
                             auto_triggered = True
                             if desired:
                                 _auto_fired_once = True
@@ -1528,30 +1349,30 @@ def main():
                             rlt_config.n_action_steps_rl)
                 except Exception as exc:  # noqa: BLE001
                     logger.error("Autonomous boundary inference failed: %s", exc)
-                    SHUTDOWN = True
+                    console.SHUTDOWN = True
                     break
                 _last_z_rl = z_rl.detach().cpu().numpy()
 
                 # ── Critical bookkeeping (post-inference auto fallback) ──
                 if (_auto_armed and critical_detector is not None
-                        and time.time() - CRITICAL_MANUAL_OVERRIDE_AT
+                        and time.time() - console.CRITICAL_MANUAL_OVERRIDE_AT
                         >= args.auto_critical_override_cooldown):
                     desired = critical_detector.update(
                         _last_z_rl, normalize_state(state_tensor)[:state_dim].numpy())
-                    if desired is not None and desired != CRITICAL_PHASE_ACTIVE:
-                        CRITICAL_PHASE_ACTIVE = desired
+                    if desired is not None and desired != console.CRITICAL_PHASE_ACTIVE:
+                        console.CRITICAL_PHASE_ACTIVE = desired
                         auto_triggered = True
                         if desired:
                             _auto_fired_once = True
                         logger.info("[KEY] Auto critical phase %s (P=%.3f)",
                                     "STARTED" if desired else "STOPPED",
                                     critical_detector.last_probability)
-                if CRITICAL_PHASE_ACTIVE != _last_critical_seen:
-                    direction = "on" if CRITICAL_PHASE_ACTIVE else "off"
+                if console.CRITICAL_PHASE_ACTIVE != _last_critical_seen:
+                    direction = "on" if console.CRITICAL_PHASE_ACTIVE else "off"
                     toggle_source = "auto" if auto_triggered else "manual"
                     if critical_recorder is not None:
                         critical_recorder.record_toggle(episode, episode_step_counter,
-                                                        CRITICAL_PHASE_ACTIVE)
+                                                        console.CRITICAL_PHASE_ACTIVE)
                     if critical_frames_dir is not None:
                         save_critical_transition(
                             critical_frames_dir, ("base_image", "wrist_image"),
@@ -1570,7 +1391,7 @@ def main():
                             start_stride_materialization()
                             logger.info("[KEY] Terminal observation anchored to critical OFF: "
                                         "ep%d step%d", episode, episode_step_counter)
-                    _last_critical_seen = CRITICAL_PHASE_ACTIVE
+                    _last_critical_seen = console.CRITICAL_PHASE_ACTIVE
                 if critical_recorder is not None:
                     critical_recorder.record_sample(
                         episode, episode_step_counter, _last_z_rl,
@@ -1588,7 +1409,7 @@ def main():
                     collection_phase=collection_phase,
                     episode_id=episode, step_id=episode_step_counter,
                 )
-                if pending_policy_window is not None and CRITICAL_PHASE_ACTIVE:
+                if pending_policy_window is not None and console.CRITICAL_PHASE_ACTIVE:
                     episode_transitions.append(build_transition(
                         pending_policy_window, boundary,
                         horizon=rlt_config.n_action_steps_rl, action_dim=action_dim))
@@ -1597,15 +1418,15 @@ def main():
                 # ── Actor gating (VLA vs RL) ──
                 _critical_sustained_steps = (
                     _critical_sustained_steps + rlt_config.n_action_steps_rl
-                    if CRITICAL_PHASE_ACTIVE else 0
+                    if console.CRITICAL_PHASE_ACTIVE else 0
                 )
                 if (
-                    not CRITICAL_PHASE_ACTIVE
+                    not console.CRITICAL_PHASE_ACTIVE
                     or _critical_sustained_steps < args.actor_critical_delay_steps
                     or args.vla_only
                     or episode <= args.warmup_episodes
                     or total_updates < args.actor_start_updates
-                    or not ACTOR_ENABLED
+                    or not console.ACTOR_ENABLED
                 ):
                     requested_abs = vla_actions                    # (1,10,7) ABSOLUTE
                     action_source = "VLA"
@@ -1670,7 +1491,7 @@ def main():
                     if takeover.pending:
                         takeover_during_chunk = True
                         break
-                    if CRITICAL_PHASE_ACTIVE:
+                    if console.CRITICAL_PHASE_ACTIVE:
                         if critical_step_counter is None:
                             critical_step_counter = 0
                         if critical_step_counter % replay_stride == 0:
@@ -1704,11 +1525,11 @@ def main():
                         target_deg = clamped
                     actual = send_validated_action(target_deg, action_source)
                     if actual is None:
-                        SHUTDOWN = True
+                        console.SHUTDOWN = True
                         break
                     normalized = normalize_action(actual.unsqueeze(0)).squeeze(0)
                     window.append(normalized, current_source)
-                    if CRITICAL_PHASE_ACTIVE:
+                    if console.CRITICAL_PHASE_ACTIVE:
                         if critical_step_counter is None:
                             critical_step_counter = 0
                         row = (window_rows[action_offset] if args.rtc_mode
@@ -1726,7 +1547,7 @@ def main():
                     if remaining > 0:
                         time.sleep(remaining)
                     step_start = time.time()
-                if SHUTDOWN:
+                if console.SHUTDOWN:
                     break
                 source_counts[TransitionSource(current_source)] += window.executed_steps
                 if (action_source == "ACTOR" and args.actor_execution_steps > 0
@@ -1739,7 +1560,7 @@ def main():
                                                              episode_step_counter)
                     if end_snapshot is None:
                         break
-                    if window.executed_steps and CRITICAL_PHASE_ACTIVE:
+                    if window.executed_steps and console.CRITICAL_PHASE_ACTIVE:
                         deferred_windows.append(DeferredExecutionWindow(
                             start=window.boundary, end=end_snapshot,
                             actions=list(window.actions), sources=list(window.sources),
@@ -1750,7 +1571,7 @@ def main():
 
                 if window.executed_steps < steps_to_execute:
                     break
-                pending_policy_window = window if CRITICAL_PHASE_ACTIVE else None
+                pending_policy_window = window if console.CRITICAL_PHASE_ACTIVE else None
 
                 if args.rtc_mode:
                     rtc_last_cmd = last_valid_target
@@ -1761,14 +1582,14 @@ def main():
                                 float(np.linalg.norm(_last_z_rl)), intervention_steps)
             # ── end of rollout blocks ─────────────────────────────────────
 
-            if not SHUTDOWN and not EMERGENCY_STOP:
+            if not console.SHUTDOWN and not console.EMERGENCY_STOP:
                 human_active = False
                 takeover = TakeoverState()
 
             flush_deferred_hil_windows()
 
-            if terminal_snapshot is None and step_records and not SHUTDOWN \
-                    and not EMERGENCY_STOP and not robot_faulted:
+            if terminal_snapshot is None and step_records and not console.SHUTDOWN \
+                    and not console.EMERGENCY_STOP and not robot_faulted:
                 terminal_snapshot = capture_boundary_snapshot("terminal transition",
                                                               episode_step_counter)
                 if terminal_snapshot is not None:
@@ -1777,7 +1598,7 @@ def main():
                     start_stride_materialization()
 
             terminal_pending_window = None
-            if pending_policy_window is not None and not SHUTDOWN and not EMERGENCY_STOP \
+            if pending_policy_window is not None and not console.SHUTDOWN and not console.EMERGENCY_STOP \
                     and not robot_faulted:
                 terminal_pending_window = pending_policy_window
                 pending_policy_window = None
@@ -1788,8 +1609,8 @@ def main():
                 episode_transitions.clear()
                 break
 
-            if SKIP_EPISODE:
-                SKIP_EPISODE = False
+            if console.SKIP_EPISODE:
+                console.SKIP_EPISODE = False
                 logger.info("Episode skipped by user ('g').")
                 episode_transitions.clear()
                 # A skipped episode still counts toward the episode counter, so
@@ -1799,15 +1620,15 @@ def main():
                     ckpt_path = output_dir / f"checkpoint_ep{episode}.pt"
                     save_stage2_checkpoint(ckpt_path, episode)
                     logger.info("  Saved checkpoint (skipped episode): %s", ckpt_path)
-                if not EMERGENCY_STOP and not robot_faulted and args.reset_between_episodes:
+                if not console.EMERGENCY_STOP and not robot_faulted and args.reset_between_episodes:
                     robot.reset()
                 continue
-            if FINISH_EPISODE:
-                FINISH_EPISODE = False
+            if console.FINISH_EPISODE:
+                console.FINISH_EPISODE = False
                 logger.info("Episode %d finished early ('f'); keeping %d transition(s).",
                             episode, len(episode_transitions))
 
-            reward, should_continue, discard_episode = console.prompt_episode_reward()
+            reward, should_continue, discard_episode = console_mgr.prompt_episode_reward()
             if not should_continue:
                 logger.info("User requested quit.")
                 break
@@ -1815,7 +1636,7 @@ def main():
                 logger.info("Discarded episode %d with %d transitions.",
                             episode, len(episode_transitions))
                 episode_transitions.clear()
-                if not EMERGENCY_STOP and not robot_faulted and args.reset_between_episodes:
+                if not console.EMERGENCY_STOP and not robot_faulted and args.reset_between_episodes:
                     robot.reset()
                 continue
 
@@ -1858,7 +1679,7 @@ def main():
                 episode_transitions,
                 reward=reward,
                 faulted=robot_faulted,
-                interrupted=SHUTDOWN or EMERGENCY_STOP,
+                interrupted=console.SHUTDOWN or console.EMERGENCY_STOP,
             )
 
             episode_rewards.append(reward)
@@ -1866,7 +1687,7 @@ def main():
             completed_episode = episode
             last_actor_active = 1 if episode_actor_executed else 0
 
-            if not EMERGENCY_STOP and not robot_faulted and args.reset_between_episodes:
+            if not console.EMERGENCY_STOP and not robot_faulted and args.reset_between_episodes:
                 robot.reset()
 
             recent = episode_rewards[-20:]
@@ -1918,10 +1739,10 @@ def main():
                 training_thread.join(timeout=2.0)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Async trainer cleanup failed: %s", exc)
-        console.stop()
+        console_mgr.stop()
         if critical_recorder is not None:
             critical_recorder.close()
-        if EMERGENCY_STOP:
+        if console.EMERGENCY_STOP:
             robot.estop()
         try:
             robot.disconnect()

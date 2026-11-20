@@ -37,8 +37,10 @@ from finearm.rl.algorithms.rltoken.critical import CriticalPhaseDetector
 from finearm.rl.algorithms.rltoken.networks import RLTChunkActor, RLTConfig
 from finearm.rl.norm import load_quantile_stats
 from finearm.rl.replay import make_vla_reference_chunk
-from finearm.rl import train_stage2 as t2  # (console globals + helpers; decouple in 5b)
-from finearm.rl.train_stage2 import ConsoleInputManager, VLAClient, load_robot
+from finearm.rl import train_stage2 as t2  # (config helpers; decoupled below)
+from finearm.rl.loop.console import ConsoleInputManager
+from finearm.rl.loop import console as console_state
+from finearm.rl.train_stage2 import VLAClient, load_robot
 import signal  # noqa: E402
 
 import logging
@@ -46,13 +48,16 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-# NOTE (Phase 5a): the pre-move file referenced a bare `signal_handler` that
-# was never imported — it crashed on import (masked because ruff excluded
-# RL/). Minimal fix applied here so the moved module is runnable and
-# lint-clean; the full fix (own handler, decoupled from train_stage2) is
-# Phase 5b scope per REFACTOR_PLAN.md §九.
-signal.signal(signal.SIGINT, t2.signal_handler)
-signal.signal(signal.SIGTERM, t2.signal_handler)
+
+def _signal_handler(sig, frame):
+    """Own handler (5b full fix): graceful stop via the shared console state,
+    decoupled from train_stage2's handler."""
+    logger.info("Shutdown signal received. Finishing current episode...")
+    console_state.SHUTDOWN = True
+
+
+signal.signal(signal.SIGINT, _signal_handler)
+signal.signal(signal.SIGTERM, _signal_handler)
 
 
 def parse_args():
@@ -137,7 +142,7 @@ def main():
 
     try:
         for episode in range(1, args.max_episodes + 1):
-            if t2.SHUTDOWN or t2.EMERGENCY_STOP:
+            if console_state.SHUTDOWN or console_state.EMERGENCY_STOP:
                 break
             print(f"\n[deploy] Episode {episode}/{args.max_episodes}", flush=True)
             CRITICAL = False
@@ -147,8 +152,8 @@ def main():
             rollout = {"states": [], "actions": [], "sources": [], "z_rl_norms": []} if record_dir else None
 
             for block in range(args.steps_per_episode // window):
-                if t2.SHUTDOWN or t2.EMERGENCY_STOP or t2.FINISH_EPISODE:
-                    t2.FINISH_EPISODE = False
+                if console_state.SHUTDOWN or console_state.EMERGENCY_STOP or console_state.FINISH_EPISODE:
+                    console_state.FINISH_EPISODE = False
                     break
                 step_start = time.time()
                 obs = robot.get_observation()
@@ -166,9 +171,9 @@ def main():
                                     "ON" if desired else "OFF", detector.last_probability)
 
                 # Manual 'c' always wins over the auto-detector (PLAN §五).
-                if t2.CRITICAL_PHASE_ACTIVE != CRITICAL:
-                    CRITICAL = t2.CRITICAL_PHASE_ACTIVE
-                ACTOR = t2.ACTOR_ENABLED
+                if console_state.CRITICAL_PHASE_ACTIVE != CRITICAL:
+                    CRITICAL = console_state.CRITICAL_PHASE_ACTIVE
+                ACTOR = console_state.ACTOR_ENABLED
 
                 ref_norm = stats.normalize_action(make_vla_reference_chunk(
                     raw_actions, action_dim=rlt_config.action_dim,

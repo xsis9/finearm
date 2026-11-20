@@ -15,7 +15,8 @@ import pytest
 
 # Import paths (src/, RL/rlt_panthera, its scripts/) come from tests/rl/conftest.py.
 
-import train_stage2  # noqa: E402
+import train_stage2
+from finearm.rl.loop import console as console_state  # noqa: E402
 
 
 class FakeStdin:
@@ -39,7 +40,7 @@ def console_factory():
     made = []
 
     def make(lines, **kwargs):
-        manager = train_stage2.ConsoleInputManager(stream=FakeStdin(lines), **kwargs)
+        manager = console_state.ConsoleInputManager(stream=FakeStdin(lines), **kwargs)
         made.append(manager)
         return manager
 
@@ -59,49 +60,49 @@ def _wait(flag_check, timeout=2.0):
 
 
 def test_a_requires_critical_press_c_first(console_factory):
-    train_stage2.ACTOR_ENABLED = False
-    train_stage2.CRITICAL_PHASE_ACTIVE = False
+    console_state.ACTOR_ENABLED = False
+    console_state.CRITICAL_PHASE_ACTIVE = False
     stream = FakeStdin(["a"])
-    console = train_stage2.ConsoleInputManager(stream=stream)
+    console = console_state.ConsoleInputManager(stream=stream)
     console.start()
     try:
         import time
         time.sleep(0.3)  # let the lone 'a' be consumed (and rejected)
-        assert not train_stage2.ACTOR_ENABLED, "'a' outside critical must not enable"
+        assert not console_state.ACTOR_ENABLED, "'a' outside critical must not enable"
         stream.push("c")
-        assert _wait(lambda: train_stage2.CRITICAL_PHASE_ACTIVE)
+        assert _wait(lambda: console_state.CRITICAL_PHASE_ACTIVE)
         stream.push("a")
-        assert _wait(lambda: train_stage2.ACTOR_ENABLED), "'a' inside critical enables the actor"
+        assert _wait(lambda: console_state.ACTOR_ENABLED), "'a' inside critical enables the actor"
     finally:
         console.stop()
-        train_stage2.ACTOR_ENABLED = False
-        train_stage2.CRITICAL_PHASE_ACTIVE = False
+        console_state.ACTOR_ENABLED = False
+        console_state.CRITICAL_PHASE_ACTIVE = False
 
 
 def test_second_a_disables_actor_inside_critical(console_factory):
-    train_stage2.ACTOR_ENABLED = False
-    train_stage2.CRITICAL_PHASE_ACTIVE = True
+    console_state.ACTOR_ENABLED = False
+    console_state.CRITICAL_PHASE_ACTIVE = True
     console = console_factory(["a", "a"])
     console.start()
-    assert _wait(lambda: train_stage2.ACTOR_ENABLED)
-    assert _wait(lambda: not train_stage2.ACTOR_ENABLED)
-    train_stage2.CRITICAL_PHASE_ACTIVE = False
+    assert _wait(lambda: console_state.ACTOR_ENABLED)
+    assert _wait(lambda: not console_state.ACTOR_ENABLED)
+    console_state.CRITICAL_PHASE_ACTIVE = False
 
 
 def test_auto_critical_allows_a_without_c(console_factory):
-    train_stage2.ACTOR_ENABLED = False
-    train_stage2.CRITICAL_PHASE_ACTIVE = False
+    console_state.ACTOR_ENABLED = False
+    console_state.CRITICAL_PHASE_ACTIVE = False
     console = console_factory(["a"], auto_critical=True)
     console.start()
-    assert _wait(lambda: train_stage2.ACTOR_ENABLED)
-    train_stage2.ACTOR_ENABLED = False
+    assert _wait(lambda: console_state.ACTOR_ENABLED)
+    console_state.ACTOR_ENABLED = False
 
 
 def test_reward_prompt_parses_y_n_d_q(console_factory):
     console = console_factory(["x", "y"])
     console.start()
     assert console.prompt_episode_reward() == (1.0, True, False)
-    train_stage2.SHUTDOWN = False
+    console_state.SHUTDOWN = False
 
     console2 = console_factory(["d"])
     console2.start()
