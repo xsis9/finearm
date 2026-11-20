@@ -141,6 +141,33 @@ SFT/微调在训练机上跑(修改版 openpi 源码已 vendored 在 `models/ope
    (数据集 → stats → checkpoint → 服务的 task)启动时端到端校验;
 4. 训练出的 checkpoint + 其 task 字符串就是第 4 步服务的内容。
 
+#### SFT 快速上手(π0.5,用本仓库)
+
+vendored 的 `models/openpi` 就是可训练的树(训练机或任意 CUDA 机器;上游
+环境由入库的 `uv.lock` 精确复现):
+
+```bash
+git clone git@github.com:xsis9/finearm.git && cd finearm/models/openpi
+curl -LsSf https://astral.sh/uv/install.sh | sh   # 装 uv,一次性
+uv sync                                            # 复现训练环境
+
+# 重资产(不入 git)——从现存位置拷一次:
+#   π0.5 基线权重 → checkpoints/pi05_base/          (config 按树相对路径引用)
+#   数据集(panthera_bolt_p3 …)→ 任意目录,然后:
+export LEROBOT_HOME=<数据集所在目录>                # lerobot 按此解析本地数据集
+
+# 冒烟(10 步——先证明 权重+数据+环境 全链通再跑全量):
+uv run python scripts/train.py --config pi05_panthera_p3 num_train_steps=10 exp_name=smoke
+# 全量:
+uv run python scripts/train.py --config pi05_panthera_p3
+```
+
+checkpoint 落在 `checkpoints/pi05_panthera_p3/<exp_name>/`。逐 checkpoint
+自动评估:另开终端 `bash scripts/watch_panthera_p3.sh`;loss 曲线:
+`uv run python scripts/plot_panthera_p3_loss.py <train.log>`。跟上游更新:
+checkout 上游后应用
+[`third_party/patches/openpi-panthera.patch`](third_party/patches/openpi-panthera.patch)。
+
 ### 4 · 服务(GPU 机)与隧道
 
 在 GPU 机上起策略服务(各模型说明:[`infer/README.md`](infer/README.md)

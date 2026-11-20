@@ -158,6 +158,34 @@ checkpoint servable:
    checkpoint → served task) is validated end-to-end at startup;
 4. the trained checkpoint + its task string are what stage 4 serves.
 
+#### SFT quickstart (π0.5, from this repo)
+
+The vendored `models/openpi` is the runnable training tree (training machine
+or any CUDA box; the upstream env is reproduced exactly by the committed
+`uv.lock`):
+
+```bash
+git clone git@github.com:xsis9/finearm.git && cd finearm/models/openpi
+curl -LsSf https://astral.sh/uv/install.sh | sh   # uv, once
+uv sync                                            # reproduce the training env
+
+# heavy assets (not in git) — copy once from wherever they live:
+#   pi0.5 base weights → checkpoints/pi05_base/          (referenced tree-relative)
+#   datasets (panthera_bolt_p3 …) → any dir, then:
+export LEROBOT_HOME=<dir-containing-the-datasets>  # lerobot resolves local datasets
+
+# smoke (10 steps — proves weights + data + env before the full run):
+uv run python scripts/train.py --config pi05_panthera_p3 num_train_steps=10 exp_name=smoke
+# full run:
+uv run python scripts/train.py --config pi05_panthera_p3
+```
+
+Checkpoints land under `checkpoints/pi05_panthera_p3/<exp_name>/`. Per-checkpoint
+auto-evaluation: `bash scripts/watch_panthera_p3.sh` (separate terminal); loss
+plot: `uv run python scripts/plot_panthera_p3_loss.py <train.log>`. Rebase onto
+a newer upstream: checkout upstream, apply
+[`third_party/patches/openpi-panthera.patch`](third_party/patches/openpi-panthera.patch).
+
 ### 4 · Serve (GPU box) and tunnel
 
 Start the policy server on the GPU box (per-model instructions:
