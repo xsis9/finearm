@@ -35,7 +35,9 @@ INK, INK2, MUTED = "#0b0b0b", "#52514e", "#898781"
 GRID, BASELINE, SURFACE = "#e1e0d9", "#c3c2b7", "#fcfcfb"
 CRIT = "#d03b3b"                        # status.critical,仅标记评估失败项
 
-TRAIN_LOG = sys.argv[1] if len(sys.argv) > 1 else "<repo>/train-queue/logs/20261107175553-pi05_panthera_p3.log"
+TRAIN_LOG = sys.argv[1] if len(sys.argv) > 1 else None
+if not TRAIN_LOG:
+    sys.exit("usage: plot_panthera_p3_loss.py <train.log> [results.jsonl] [out.png]")
 RESULTS = sys.argv[2] if len(sys.argv) > 2 else "checkpoints/pi05_panthera_p3/panthera_p3/auto_eval/results.jsonl"
 OUT = sys.argv[3] if len(sys.argv) > 3 else os.path.splitext(TRAIN_LOG)[0] + "_loss.png"
 

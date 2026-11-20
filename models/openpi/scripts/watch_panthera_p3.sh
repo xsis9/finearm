@@ -6,7 +6,7 @@
 # 注意: 本脚本故意不在启动时 mkdir 任何目录——checkpoint 目录必须由
 # train.py 的 initialize_checkpoint_dir 创建,提前创建会让训练报 FileExistsError。
 set -u
-cd <openpi-tree>
+cd "$(dirname "$0")/.."   # openpi 树根(脚本在 scripts/ 下)
 CKPT_DIR="checkpoints/pi05_panthera_p3/panthera_p3"
 OUT="$CKPT_DIR/auto_eval/results.jsonl"
 POLL=60
