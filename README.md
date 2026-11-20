@@ -117,6 +117,11 @@ to stop it, kill the **python** PID (not the bash wrapper).
 ```bash
 bash utils/lock_cameras.sh        # FIRST, always: camera params must match training/inference
 
+source data/collect/panthera-lerobot-collect/.venv-lerobot/bin/activate
+# (preflight requires lerobot-record on PATH — activate the collect venv or
+#  prepend its bin/ dir; invoking the console entry by absolute path alone
+#  is not enough)
+
 # canonical entry (same flags as the legacy wrapper):
 finearm-collect --method teleop --live \
     --leader-config arm/panthera/robot_param/Leader.yaml \
