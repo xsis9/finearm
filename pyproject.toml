@@ -17,6 +17,7 @@ dev = ["pytest>=8", "ruff>=0.8"]
 [project.scripts]
 finearm-daemon = "finearm.arms.daemon.cli:main"
 finearm-infer = "finearm.infer.cli:main"
+finearm-collect = "finearm.data.cli:main"
 
 # Phase 1: src-layout installable package (finearm.core only, stdlib deps).
 # Domain extras (robot/data/infer/rl) land with their phases per REFACTOR_PLAN.md.

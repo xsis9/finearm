@@ -54,6 +54,17 @@ jobs:
       - name: Infer suite (executor math, RTC golden comparison, stop-and-go, shims)
         run: python -m pytest tests/infer/
 
+  collect-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - name: Collect suite (registry, dagger stub, --arm parameterization, shims)
+        run: python -m pytest tests/data/
+
   rl-tests:
     runs-on: ubuntu-latest
     steps:
