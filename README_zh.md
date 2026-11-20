@@ -199,7 +199,12 @@ ssh -N -L 8000:127.0.0.1:8000 <user>@<gpu-host>
 
 ### 5 · 推理(安全阶梯——逐级放行)
 
+在**执行机**(接机械臂的那台)、仓库根目录、**推理环境**里运行
+(openpi-client + finearm 命令行入口——即上面一次性准备里装过的那个):
+
 ```bash
+source infer/.venv/bin/activate     # 还没装 → infer/.venv/bin/pip install -e . --no-deps
+
 # 一级 · 无硬件,全客户端栈(mock 适配器,无服务):
 finearm-infer --model mock --host 127.0.0.1 --exec-mode rtc --mock --max-steps 300
 # 二级 · 真相机 + 真 daemon,action 只打印不下发:

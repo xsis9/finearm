@@ -217,7 +217,13 @@ ssh -N -L 8000:127.0.0.1:8000 <user>@<gpu-host>
 
 ### 5 · Infer (safety ladder — climb one level at a time)
 
+Runs on the **executor box** (the machine attached to the arm), from the
+repo root, in the **infer environment** (openpi-client + the finearm console
+entries — same one-time `pip install -e . --no-deps` as the setup above):
+
 ```bash
+source infer/.venv/bin/activate     # not installed yet → infer/.venv/bin/pip install -e . --no-deps
+
 # level 1 · no hardware, full client stack (mock adapter, no server):
 finearm-infer --model mock --host 127.0.0.1 --exec-mode rtc --mock --max-steps 300
 # level 2 · real cameras + daemon, actions printed not sent:
