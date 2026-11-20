@@ -34,6 +34,8 @@ import time
 from dataclasses import dataclass, field
 
 import numpy as np
+
+from finearm.core.io import fsync_file
 import torch
 
 logger = logging.getLogger(__name__)
@@ -823,8 +825,7 @@ class ReplayManager:
         with self._lock:
             with open(self._journal_path, "ab") as f:
                 pickle.dump(record, f, protocol=pickle.HIGHEST_PROTOCOL)
-                f.flush()
-                os.fsync(f.fileno())
+                fsync_file(f)
             try:
                 self._buffer.add(transition)
             except Exception:

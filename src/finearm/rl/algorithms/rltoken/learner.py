@@ -269,135 +269,21 @@ def perform_training_update(
 # Stage-2 checkpoint schema (v3, paper_full_output_v1 contract)
 # ─────────────────────────────────────────────────────────────────────────────
 
-SCHEMA_VERSION = 3
-ACTOR_CONTRACT = "paper_full_output_v1"
-RL_CHUNK_LENGTH = 10
-
-
-def canonical_digest(payload: dict) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
-    return hashlib.sha256(encoded).hexdigest()
-
-
-def build_stage2_checkpoint(**payload) -> dict:
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "resume_supported": True,
-        "actor_contract": ACTOR_CONTRACT,
-        "rl_chunk_length": RL_CHUNK_LENGTH,
-        **payload,
-    }
-
-
-def atomic_torch_save(payload: dict, path: Path) -> None:
-    tmp_path = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
-    try:
-        torch.save(payload, tmp_path)
-        os.replace(tmp_path, path)
-    finally:
-        if tmp_path.exists():
-            tmp_path.unlink()
-
-
-def capture_rng_state() -> dict:
-    return {
-        "python": random.getstate(),
-        "numpy": np.random.get_state(),
-        "torch": torch.get_rng_state(),
-        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
-    }
-
-
-def restore_rng_state(state: dict) -> None:
-    # Byte-tensor RNG states must be on CPU: torch.load(map_location="cuda")
-    # would otherwise move them to the GPU and torch.set_rng_state raises
-    # "RNG state must be a torch.ByteTensor". RNG exactness is best-effort only.
-    try:
-        random.setstate(state["python"])
-        np.random.set_state(state["numpy"])
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("python/numpy RNG state could not be restored: %s", exc)
-    torch_state = state.get("torch")
-    if torch_state is not None:
-        if torch.is_tensor(torch_state):
-            torch_state = torch_state.detach().to("cpu")
-        try:
-            torch.set_rng_state(torch_state)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("torch RNG state could not be restored: %s", exc)
-    cuda_states = state.get("cuda")
-    if cuda_states is not None and torch.cuda.is_available():
-        try:
-            torch.cuda.set_rng_state_all([
-                s.detach().to("cpu") if torch.is_tensor(s) else s for s in cuda_states
-            ])
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("CUDA RNG state could not be restored: %s", exc)
-
-
-def move_optimizer_state_to_device(optimizer: torch.optim.Optimizer, device: torch.device) -> None:
-    for state in optimizer.state.values():
-        for key, value in state.items():
-            if isinstance(value, torch.Tensor):
-                state[key] = value.to(device)
-
-
-def prepare_output_dir(path: Path, *, dry_run: bool) -> None:
-    """Fail closed on prior contents; dry-run performs no filesystem mutation."""
-    if path.exists():
-        if not path.is_dir():
-            raise ValueError(f"--output_dir is not a directory: {path}")
-        contents = list(path.iterdir())
-        if contents:
-            raise FileExistsError(
-                f"--output_dir already contains {len(contents)} item(s): {path}. "
-                "Stage 2 resume is unsupported; choose a new empty directory."
-            )
-    if not dry_run:
-        path.mkdir(parents=True, exist_ok=True)
-
-
-def prepare_resume_checkpoint(path: Path, output_dir: Path, *, dry_run: bool) -> dict:
-    if not path.is_file():
-        raise FileNotFoundError(f"--resume_from checkpoint does not exist: {path}")
-    if path.parent.resolve() == output_dir.resolve():
-        raise ValueError("--output_dir must be a new directory, not the resume checkpoint directory.")
-    checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-    required = {
-        "actor_state_dict", "actor_target_state_dict", "critic_state_dict", "critic_target_state_dict",
-        "actor_optimizer", "critic_optimizer", "episode", "episode_rewards", "episode_interventions",
-        "total_updates", "rng_state", "replay_rng_state", "replay_journal_bytes", "replay_entries",
-        "runtime_provenance",
-    }
-    missing = sorted(required - set(checkpoint))
-    if (
-        checkpoint.get("schema_version") != SCHEMA_VERSION
-        or not checkpoint.get("resume_supported")
-        or checkpoint.get("actor_contract") != ACTOR_CONTRACT
-        or checkpoint.get("rl_chunk_length") != RL_CHUNK_LENGTH
-        or missing
-    ):
-        raise ValueError(
-            "Checkpoint is not a complete paper-aligned full-output Stage 2 checkpoint; start a new run. "
-            f"Missing: {missing}"
-        )
-    source_journal = path.parent / "replay_journal.pkl"
-    if not source_journal.is_file():
-        raise FileNotFoundError(f"Resume checkpoint requires replay journal: {source_journal}")
-    journal_bytes = checkpoint["replay_journal_bytes"]
-    if not isinstance(journal_bytes, int) or journal_bytes < 0 or source_journal.stat().st_size < journal_bytes:
-        raise ValueError("Resume checkpoint replay journal boundary is invalid or source journal is truncated.")
-    if not dry_run:
-        destination_journal = output_dir / "replay_journal.pkl"
-        with source_journal.open("rb") as source, destination_journal.open("wb") as destination:
-            remaining = journal_bytes
-            while remaining:
-                block = source.read(min(1024 * 1024, remaining))
-                if not block:
-                    raise ValueError("Resume source journal ended before the checkpoint boundary.")
-                destination.write(block)
-                remaining -= len(block)
-    return checkpoint
+# ── Moved in Phase 5b (re-exported for the rlt.learner shim surface) ─────────
+# Checkpoint/io machinery → finearm.rl.loop.checkpoint (core.io primitives);
+# RNG snapshot → finearm.rl.loop.rng (core.rng primitive).
+from finearm.rl.loop.checkpoint import (  # noqa: F401
+    ACTOR_CONTRACT,
+    RL_CHUNK_LENGTH,
+    SCHEMA_VERSION,
+    atomic_torch_save,
+    build_stage2_checkpoint,
+    canonical_digest,
+    move_optimizer_state_to_device,
+    prepare_output_dir,
+    prepare_resume_checkpoint,
+)
+from finearm.rl.loop.rng import capture_rng_state, restore_rng_state  # noqa: F401
 
 
 __all__ = [

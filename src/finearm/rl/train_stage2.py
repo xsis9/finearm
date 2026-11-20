@@ -81,17 +81,18 @@ from finearm.core import paths as _core_paths
 
 from finearm.rl.algorithms.rltoken.critical import CriticalPhaseDetector
 from finearm.rl.algorithms.rltoken.learner import (
+    perform_training_update,
+    sample_fixed_std_action,
+)
+from finearm.rl.loop.checkpoint import (
     atomic_torch_save,
     build_stage2_checkpoint,
     canonical_digest,
-    capture_rng_state,
     move_optimizer_state_to_device,
-    perform_training_update,
     prepare_output_dir,
     prepare_resume_checkpoint,
-    restore_rng_state,
-    sample_fixed_std_action,
 )
+from finearm.rl.loop.rng import capture_rng_state, restore_rng_state
 from finearm.rl.algorithms.rltoken.networks import (
     RLTChunkActor,
     RLTConfig,
