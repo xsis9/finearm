@@ -1,18 +1,29 @@
-"""rlt — pure torch RL Token components for the Panthera-HT π0.5 stack.
+"""兼容 shim:rlt 包真身 = finearm.rl(Phase 5a 搬移)。
 
-Ported from RL-Token-Pi05-open (github.com/Zhengsw03/RL-Token-Pi05-open) for
-the openpi JAX base (see /root/xsx/RL/PLAN.md). This package has zero openpi /
-lerobot imports: only torch + numpy. Dimension parameterization is
-state_dim = action_dim = 7 (6 joints + gripper), RL chunk 10, VLA horizon 30.
-
-Modules:
-- networks: RLTConfig + RLTokenEncoder/Decoder, RLTChunkActor, RLTTwinCritic
-- critical: CriticalPhaseClassifier / CriticalPhaseDetector (Stage 1.5)
-- replay:  Transition/ReplayManager journal + stride-2 construction
-- learner: perform_training_update (TD3+BC) + Stage-2 checkpoint schema
-- norm:    q01/q99 quantile normalization for the absolute joint space
+networks/critical/learner → finearm.rl.algorithms.rltoken;
+replay → finearm.rl.replay;norm → finearm.rl.norm。子模块 shim 逐个转发,
+sys.modules 别名保证 pickle 类路径(旧 journal/checkpoint)继续可解析。
 """
 
-from . import critical, learner, networks, norm, replay  # noqa: F401
+import sys
+from pathlib import Path
+
+try:
+    import finearm.rl  # noqa: F401
+except ImportError:
+    _src = Path(__file__).resolve().parents[3] / "src"
+    if str(_src) not in sys.path:
+        sys.path.insert(0, str(_src))
+    import finearm.rl  # noqa: F401
+
+from finearm.rl.algorithms import rltoken as _rltoken
+from finearm.rl import norm as _norm
+from finearm.rl import replay as _replay
+
+critical = _rltoken.critical
+learner = _rltoken.learner
+networks = _rltoken.networks
+norm = _norm
+replay = _replay
 
 __all__ = ["networks", "critical", "replay", "learner", "norm"]

@@ -10,11 +10,18 @@ import pytest
 import torch
 
 from rlt.norm import (
-    PANTHERA_BOLT_P3_STATS_PATH,
     load_quantile_stats,
     quantile_normalize,
     quantile_unnormalize,
 )
+
+# Optional real-stats integration: set FINEARM_REAL_STATS_PATH to a
+# panthera_bolt_p3 meta/stats.json to exercise the loader on real data
+# (the dropped PANTHERA_BOLT_P3_STATS_PATH constant was machine-absolute;
+# Phase 5a made the path an explicit environment opt-in instead).
+import os
+
+_REAL_STATS_PATH = os.environ.get("FINEARM_REAL_STATS_PATH")
 
 
 def test_quantile_round_trip_identity():
@@ -113,7 +120,10 @@ def test_rejects_non_finite_quantiles(tmp_path):
     payload = json.loads(path.read_text())
     payload["action"]["q01"][3] = None
     path.write_text(json.dumps(payload))
-    with pytest.raises(ValueError, match="finite"):
+    # Phase 5a: parsing lives in finearm.core.norm — a None entry now fails
+# coercion ("must be numeric") instead of numpy's silent None→nan
+# ("must be finite"). Both are ValueError; type is the contract.
+    with pytest.raises(ValueError, match="finite|numeric"):
         load_quantile_stats(path)
 
 
@@ -128,22 +138,23 @@ def test_missing_file_raises(tmp_path):
 
 
 def _p3_stats_available() -> bool:
-    # Untraversable prefixes (e.g. /root on another machine) raise OSError,
-    # which means "not present" for our purposes.
+    if not _REAL_STATS_PATH:
+        return False
+    # Untraversable prefixes raise OSError, which means "not present".
     try:
-        return Path(PANTHERA_BOLT_P3_STATS_PATH).is_file()
+        return Path(_REAL_STATS_PATH).is_file()
     except OSError:
         return False
 
 
 @pytest.mark.skipif(
     not _p3_stats_available(),
-    reason=f"panthera_bolt_p3 stats not present at {PANTHERA_BOLT_P3_STATS_PATH}",
+    reason="FINEARM_REAL_STATS_PATH not set or file missing",
 )
 def test_real_panthera_p3_stats_load():
     """Integration: the actual panthera_bolt_p3 meta/stats.json (absolute space)
     loads with exact 7-dim action quantiles and 14->7 state slicing."""
-    stats = load_quantile_stats(PANTHERA_BOLT_P3_STATS_PATH)
+    stats = load_quantile_stats(_REAL_STATS_PATH)
     assert tuple(stats.action_q01.shape) == (7,)
     assert tuple(stats.state_q01.shape) == (7,)
     assert torch.all(stats.action_q99 > stats.action_q01)

@@ -18,7 +18,8 @@ inference, and RL post-training on top of pre-trained VLA policies
 | `RL/rlt_panthera/` | Online RL post-training (RL-Token): training loop, replay, learner, serving |
 | `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
 | `src/finearm/arms/` | Arm plugins: `ArmProfile` schema declaration + arm-neutral control daemon (`finearm-daemon --arm <id>`); `panthera_ht` (real) and `mock_twojoint` (extensibility demo) |
-| `src/finearm/infer/` | Model adapters (pi05 / lingbot / mock) + chunk executors: `RTCExecutor` (pipelined) and `StopAndGoExecutor`; `finearm-infer --exec-mode {rtc,stop-and-go}` |
+| `src/finearm/infer/` | Model adapters (pi05 / lingbot / mock) + chunk executors: `RTCExecutor` (pipelined) and `StopAndGoExecutor`; `finearm-infer --exec-mode {rtc,stop-and-go}`; acquisition `robot_interface` (daemon IPC + cameras) |
+| `src/finearm/rl/` | Stage-2 online RL: `rltoken` algorithm (networks/critical/learner), replay + journal, serving (serve_rlt + client), envs (RobotInterface contract + panthera backend), offline pipelines; `RL/rlt_panthera` keeps shim entry points for campaign continuity |
 | `src/finearm/data/` | Collection methods as plugins: `teleop` (LeRobot-native, `--arm` parameterized) and the `dagger` stub; `finearm-collect --method teleop` |
 | `configs/` | Machine/arm/model configuration (canonical copies) |
 | `third_party/` | Upstream baseline records for vendored dependencies |

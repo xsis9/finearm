@@ -50,7 +50,8 @@ def build_parser() -> argparse.ArgumentParser:
     # shared
     ap.add_argument("--hz", type=float, default=30.0)
     ap.add_argument("--arm", default="robot_interface:RobotInterface",
-                    help="机械臂后端 模块:类;默认仓库 infer/robot_interface.py")
+                    help="机械臂后端 模块:类;默认 infer/robot_interface.py"
+                         "(Phase 5a 起 shim 转发到 finearm.infer.robot_interface)")
     ap.add_argument("--home", default=None,
                     help="归位位姿(7 个逗号分隔值);优先级:本参数 > PANTHERA_RTC_HOME "
                          "> 适配器默认;空字符串跳过归位")
