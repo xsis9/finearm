@@ -170,9 +170,27 @@ checkout 上游后应用
 
 ### 4 · 服务(GPU 机)与隧道
 
-在 GPU 机上起策略服务(各模型说明:[`infer/README.md`](infer/README.md)
-——pi05 端口 8000,lingbot 8006),然后在执行机转发端口并保持
-`--host 127.0.0.1`:
+#### 服务快速上手(π0.5,用本仓库)
+
+```bash
+git clone git@github.com:xsis9/finearm.git && cd finearm/models/openpi
+curl -LsSf https://astral.sh/uv/install.sh | sh   # 装 uv,一次性
+uv sync                                            # 复现服务环境
+
+# 搬训练产物(从训练机):
+rsync -av <user>@<训练机>:<openpi树>/checkpoints/pi05_panthera_p3/<exp>/ \
+    checkpoints/pi05_panthera_p3/<exp>/
+
+uv run scripts/serve_policy.py \
+    policy.config=pi05_panthera_p3 \
+    policy.dir=checkpoints/pi05_panthera_p3/<exp>/<step>
+# 默认端口 8000;调试可加 record=True(把每条请求的 obs/动作记到
+# policy_records/,事后核对输入)。norm-stats assets 随仓库自带。
+```
+
+在 GPU 机上起策略服务(快速上手见上;各模型细节:
+[`infer/README.md`](infer/README.md)——pi05 端口 8000,lingbot 8006),
+然后在执行机转发端口并保持 `--host 127.0.0.1`:
 
 ```bash
 ssh -N -L 8000:127.0.0.1:8000 <user>@<gpu-host>

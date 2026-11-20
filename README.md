@@ -188,7 +188,25 @@ a newer upstream: checkout upstream, apply
 
 ### 4 · Serve (GPU box) and tunnel
 
-Start the policy server on the GPU box (per-model instructions:
+#### Serve quickstart (π0.5, from this repo)
+
+```bash
+git clone git@github.com:xsis9/finearm.git && cd finearm/models/openpi
+curl -LsSf https://astral.sh/uv/install.sh | sh   # uv, once
+uv sync                                            # reproduce the serving env
+
+# bring the trained checkpoint (from the training machine):
+rsync -av <user>@<trainer>:<openpi-tree>/checkpoints/pi05_panthera_p3/<exp>/ \
+    checkpoints/pi05_panthera_p3/<exp>/
+
+uv run scripts/serve_policy.py \
+    policy.config=pi05_panthera_p3 \
+    policy.dir=checkpoints/pi05_panthera_p3/<exp>/<step>
+# serves on port 8000; add record=True while debugging (logs every request's
+# obs/actions under policy_records/). Norm-stats assets ship with the repo.
+```
+
+Start the policy server on the GPU box (quickstart above; per-model details:
 [`infer/README.md`](infer/README.md) — pi05 port 8000, lingbot 8006), then
 from the executor box forward the port and keep `--host 127.0.0.1`:
 

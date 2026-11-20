@@ -42,7 +42,10 @@
 
 ```bash
 # pi05(openpi/JAX;服务器侧无需任何改动,serve_policy 本身就是 websocket 服务)
-cd <4090 上的 openpi 仓库>
+# 现在直接用本仓库的 vendored 树(含 panthera 配置与 norm-stats assets):
+#   git clone git@github.com:xsis9/finearm.git && cd finearm/models/openpi && uv sync
+#   训练 checkpoint 从训练机 rsync 到 checkpoints/pi05_panthera_p3/<exp>/
+cd <4090 上的 finearm/models/openpi>
 uv run scripts/serve_policy.py \
     policy.config=pi05_panthera_p3 \
     policy.dir=checkpoints/pi05_panthera_p3/panthera_p3/2000
