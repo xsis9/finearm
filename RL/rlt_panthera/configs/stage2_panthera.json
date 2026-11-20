@@ -15,7 +15,7 @@
     "stats_path": "/home/xsx/panthera/data/lerobot/aggregated/panthera_bolt_p3/meta/stats.json",
 
     // ── robot (implement robot/panthera_robot.py against RobotInterface) ──
-    "robot_module": "robot.panthera_robot",
+    "robot_module": "finearm.rl.envs.panthera.robot",
 
     // ── episode / control (absolute joint space, 30 fps) ──
     "control_fps": 30.0,

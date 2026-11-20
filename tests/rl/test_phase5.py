@@ -11,10 +11,10 @@ import pytest
 
 # Import paths (src/, RL/rlt_panthera, its scripts/) come from tests/rl/conftest.py.
 REPO_ROOT = Path(__file__).resolve().parents[2] / "RL" / "rlt_panthera"
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+REPO = Path(__file__).resolve().parents[2]
 
-import plot_metrics  # noqa: E402
-import train_critical_classifier as tcc  # noqa: E402
+from finearm.rl.scripts import plot_metrics  # noqa: E402
+from finearm.rl.scripts import train_critical_classifier as tcc  # noqa: E402
 
 
 def _write_stream(path, entries):
@@ -72,14 +72,15 @@ def test_classifier_trains_and_saves(tmp_path):
     tcc.main.__wrapped__ = None  # not used; call internals via CLI below
     import subprocess, os
     env = dict(os.environ)
-    cmd = [sys.executable, "-I", str(REPO_ROOT / "scripts" / "train_critical_classifier.py"),
+    cmd = [sys.executable, "-m", "finearm.rl.scripts.train_critical_classifier",
            "--samples", str(path), "--output", str(out),
            "--epochs", "300", "--lr", "3e-3"]
-    result = subprocess.run(cmd, capture_output=True, text=True, env=env, cwd=str(REPO_ROOT))
+    env = {**env, "PYTHONPATH": str(REPO / "src")}
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env, cwd=str(REPO))
     assert result.returncode == 0, result.stderr[-2000:]
 
     import torch
-    from rlt.critical import CriticalPhaseDetector
+    from finearm.rl.algorithms.rltoken.critical import CriticalPhaseDetector
     detector = CriticalPhaseDetector(str(out), "cpu")
     assert detector.z_dim == 16
     # A clearly-critical z should drive the probability up, non-critical down.
@@ -124,7 +125,7 @@ def test_plot_metrics_parses_log(tmp_path):
 
 
 def test_hil_contract_hooks_exist():
-    from robot.robot_interface import DummyRobot, RobotInterface
+    from finearm.rl.envs.robot_interface import DummyRobot, RobotInterface
 
     for attr in ("poll_human", "enter_human_control", "exit_human_control",
                  "latest_human_action", "human_finished"):

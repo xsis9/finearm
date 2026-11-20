@@ -6,8 +6,9 @@ import math
 from dataclasses import dataclass
 from numbers import Real
 
-from panthera_lerobot_control import ControlClient
-from panthera_lerobot_control.constants import DEFAULT_SOCKET_PATH
+from finearm.arms.daemon.ipc import ControlClient
+from finearm.arms.panthera_ht import PROFILE as _P
+DEFAULT_SOCKET_PATH = _P.socket_path
 from panthera_lerobot_control.sample_coordinator import clear_snapshot, consume_snapshot
 
 from ._compat import Teleoperator, TeleoperatorConfig

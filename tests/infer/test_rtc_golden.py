@@ -26,9 +26,11 @@ FILTER = ("[RTC] 首", "适配器")
 
 
 def _run() -> str:
+    import os
+    env = {**os.environ, "PYTHONPATH": str(REPO_ROOT / "src")}
     proc = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "infer" / "rtc_client.py"), *ARGS],
-        capture_output=True, text=True, timeout=120, cwd=REPO_ROOT,
+        [sys.executable, "-m", "finearm.infer.cli", *ARGS],
+        capture_output=True, text=True, timeout=120, cwd=REPO_ROOT, env=env,
     )
     assert proc.returncode == 0, proc.stderr
     lines = [line for line in proc.stdout.splitlines()

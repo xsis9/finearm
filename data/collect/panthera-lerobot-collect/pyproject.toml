@@ -12,9 +12,6 @@ version = "0.1.0"
 requires-python = ">=3.10"
 
 [project.scripts]
-panthera-control-daemon = "panthera_lerobot_control:main"
-panthera-lr-collect = "panthera_lerobot_control.collect_cli:main"
-
 [tool.setuptools]
 packages = [
     "panthera_lerobot_control",

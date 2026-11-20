@@ -15,7 +15,7 @@ import pytest
 
 # Import paths (src/, RL/rlt_panthera, its scripts/) come from tests/rl/conftest.py.
 
-import train_stage2
+from finearm.rl import train_stage2
 from finearm.rl.loop import console as console_state  # noqa: E402
 
 

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from rlt.norm import (
+from finearm.rl.norm import (
     load_quantile_stats,
     quantile_normalize,
     quantile_unnormalize,

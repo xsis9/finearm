@@ -1,12 +1,11 @@
 # rlt_panthera
 
-> **代码已上移(Phase 5a/5b)**:算法/回放/服务/环境/训练环真身在
-> `src/finearm/rl/`(入口 `python -m finearm.rl.train_stage2` /
+> **本目录只存 run 产物与配置**:`checkpoints/`、`data/`(gitignored 的
+> campaign checkpoints / stage-1 权重 / stats)与 `configs/stage2_panthera.json`。
+> 全部代码在 `src/finearm/rl/`(入口 `python -m finearm.rl.train_stage2`、
 > `python -m finearm.rl.serving.serve_rlt`;测试在仓库根 `tests/rl/`)。
-> 本目录保留:campaign 产物(`checkpoints/`、`data/`,gitignored)、配置副本、
-> 以及全部旧 import 路径的转发 shim(`rlt/*`、`scripts/*`、`robot/*`——
-> 旧命令、journal、checkpoint 继续可用)。下文为历史文档,布局描述以
-> `src/finearm/rl/` 为准。
+> 旧 import 路径(`rlt/*`、`scripts/*`、`robot/*`)已删除,git 历史可查。
+> 下文为历史设计记录。
 
 
 RL Token 在线强化学习框架（Panthera-HT + openpi π0.5 JAX 底座）。总计划见

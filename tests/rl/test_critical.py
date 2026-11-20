@@ -10,7 +10,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from rlt.critical import CriticalPhaseClassifier, CriticalPhaseDetector
+from finearm.rl.algorithms.rltoken.critical import CriticalPhaseClassifier, CriticalPhaseDetector
 
 
 def test_classifier_output_shape():

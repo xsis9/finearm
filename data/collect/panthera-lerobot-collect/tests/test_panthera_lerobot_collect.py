@@ -12,19 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
-from panthera_lerobot_control import collect_cli
+import finearm.data.collector.teleop as collect_cli
 
 
 class PantheraLeRobotCollectTests(unittest.TestCase):
-    def test_package_metadata_declares_collect_script(self):
-        project_root = Path(__file__).resolve().parents[1]
-        metadata = tomllib.loads((project_root / "pyproject.toml").read_text())
-
-        self.assertEqual(
-            metadata["project"]["scripts"]["panthera-lr-collect"],
-            "panthera_lerobot_control.collect_cli:main",
-        )
-
     def test_camera_specs_round_trip_through_cache(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "cameras.json"

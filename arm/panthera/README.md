@@ -1,9 +1,8 @@
 # arm/panthera · Panthera-HT 机械臂驱动层
 
-> **代码已上移(Phase 2)**:daemon 控制器/IPC/适配器真身在 `src/finearm/arms/`
-> (规范入口 `finearm-daemon --arm panthera_ht`)。本目录保留**驱动资产与启动
-> 环境的权威位置**:SDK 实体、本机标定 `robot_param/`、`init_env.sh`/`run_daemon.sh`;
-> `panthera_control/` 下五个模块是转发 shim(旧 import 路径照常工作)。
+> daemon 代码在 `src/finearm/arms/`(规范入口 `finearm-daemon --arm panthera_ht`,
+> `run_daemon.sh` 直接驱动它)。本目录是**驱动资产与启动环境的权威位置**:
+> SDK 实体、本机标定 `robot_param/`、`init_env.sh`/`run_daemon.sh`。
 
 
 Panthera-HT 机械臂控制服务(daemon)与 IPC 客户端。**被数据采集

@@ -19,15 +19,6 @@ from .executors import RTCExecutor, StopAndGoExecutor
 from .mock import MockRobot
 
 
-def _infer_dir_on_path() -> None:
-    """Make the repo's infer/ importable for the default robot backend module."""
-    repo = core_paths.find_repo_root()
-    if repo is not None:
-        infer_dir = str(repo / "infer")
-        if infer_dir not in sys.path:
-            sys.path.insert(0, infer_dir)
-
-
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description="RTC / stop-and-go 推理执行客户端", formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -49,9 +40,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="每窗执行步数;0=整 chunk [stop-and-go]")
     # shared
     ap.add_argument("--hz", type=float, default=30.0)
-    ap.add_argument("--arm", default="robot_interface:RobotInterface",
-                    help="机械臂后端 模块:类;默认 infer/robot_interface.py"
-                         "(Phase 5a 起 shim 转发到 finearm.infer.robot_interface)")
+    ap.add_argument("--arm", default="finearm.infer.robot_interface:RobotInterface",
+                    help="机械臂后端 模块:类;默认 finearm.infer.robot_interface")
     ap.add_argument("--home", default=None,
                     help="归位位姿(7 个逗号分隔值);优先级:本参数 > PANTHERA_RTC_HOME "
                          "> 适配器默认;空字符串跳过归位")
@@ -82,7 +72,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.mock:
         robot = MockRobot()
     else:
-        _infer_dir_on_path()
         mod_name, cls_name = args.arm.split(":")
         home = args.home if args.home is not None else \
             os.environ.get("PANTHERA_RTC_HOME", "") or adapter.DEFAULT_HOME

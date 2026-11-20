@@ -66,7 +66,7 @@ export PATH
 
 # ROS setup scripts can prepend their own packages to PYTHONPATH. The collect
 # wrapper should import this repository and the active Python environment only.
-PYTHONPATH="${ROOT_DIR}"
+PYTHONPATH="${ROOT_DIR}/src"
 export PYTHONPATH
 
 collect_args=()
@@ -214,4 +214,4 @@ else
 fi
 
 cd "${ROOT_DIR}"
-exec "${PYTHON}" -m panthera_lerobot_control.collect_cli "${collect_args[@]}"
+exec "${PYTHON}" -m finearm.data.cli "${collect_args[@]}"

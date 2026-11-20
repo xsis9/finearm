@@ -1,11 +1,13 @@
 # 推理端(通用 VLA 实时推理 · 适配器架构)
 
-> **入口更新(Phase 3/5a)**:规范入口是 `finearm-infer --model <name> --exec-mode {rtc,stop-and-go}`
-> (`pip install -e . --no-deps` 进本环境后可用);本目录的 `rtc_client.py` 与
-> `robot_interface.py` 是转发 shim,全部历史命令/flag 照常工作。真实身:
-> 执行器/适配器在 `src/finearm/infer/`,采集后端在 `src/finearm/infer/robot_interface.py`。
-> 下文为保持历史记录原样,示例仍写 `rtc_client.py` —— 逐条可替换为
-> `finearm-infer … --exec-mode rtc`(flag 完全一致)。
+> **入口**:统一用 `finearm-infer --model <name> --exec-mode {rtc,stop-and-go}`
+> (`pip install -e . --no-deps` 进本环境后可用;或
+> `PYTHONPATH=<仓库根>/src python -m finearm.infer.cli`,flag 完全一致)。
+> 真身全部在 `src/finearm/infer/`(执行器/适配器/采集后端 robot_interface);
+> 旧文件 `rtc_client.py`/`robot_interface.py`/`adapters/` 已随清理删除
+> (git 历史可查)。下文历史示例中的 `rtc_client.py` 一律按上述入口替换,
+> 其余内容(服务端启动、安全阶梯、适配器开发指南)继续有效——适配器
+> 骨架目录现为 `src/finearm/infer/adapters/`。
 
 一套 RTC 客户端跑所有模型:执行器/控制环/安全逻辑模型无关(`rtc_client.py`),
 模型差异只存在 `adapters/<name>.py` 适配器里,`--model` 选择;机械臂/相机后端

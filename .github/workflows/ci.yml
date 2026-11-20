@@ -86,6 +86,7 @@ jobs:
           python-version: "3.12"
       - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install lerobot==0.5.1 pytest
+      - run: pip install -e . --no-deps
       - run: pip install -e data/collect/panthera-lerobot-collect --no-deps
       - name: Data-collection suite (panthera-lerobot-collect)
         working-directory: data/collect/panthera-lerobot-collect

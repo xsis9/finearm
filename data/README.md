@@ -80,8 +80,8 @@ finearm-collect --method teleop --live \
     --fps 30 --hz 1000 --teleop-gripper-squeeze-boost 1.0 --camera-fourcc MJPG
 ```
 
-采集真身在 `src/finearm/data/`(`collect_cli.py` 是转发 shim);DAgger 采集方式
-是注册表占位(`finearm.data.collector.dagger`,调用即提示未实现)。
+采集真身在 `src/finearm/data/`;DAgger 采集方式是注册表占位
+(`finearm.data.collector.dagger`,调用即提示未实现)。
 
 ## 首次环境搭建
 
@@ -108,7 +108,7 @@ cd <仓库根>
 run_panthera_lerobot_collect.sh   # 采集 wrapper(preflight + 相机锁定 + 拉起 lerobot-record)
 run_panthera_lerobot_daemon.sh    # daemon wrapper → 转发 arm/panthera/run_daemon.sh(驱动层权威入口)
 quest_bridge.py                   # Quest3S → daemon 遥操作桥(IK/FK,方式③)
-panthera_lerobot_control/         # 核心:daemon(controller/cli/ipc/adapters)+ 采集编排(collect_cli)
+panthera_lerobot_control/         # 采集域辅助模块(sample_coordinator);daemon/采集真身在 src/finearm/
 lerobot_robot_panthera_ht/        # LeRobot Robot 插件(panthera_ht_follower,14 维 state + 相机)
 lerobot_teleoperator_panthera_ht/ # LeRobot Teleoperator 插件(panthera_ht_leader,7 维 action)
 scripts/init_workspace.sh         # 环境初始化(SDK revision + wheel + .venv-lerobot)

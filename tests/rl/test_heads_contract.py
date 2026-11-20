@@ -9,7 +9,7 @@ action space and extended with full-size shape checks (2048-dim z_rl).
 import pytest
 import torch
 
-from rlt.networks import RLTConfig, RLTChunkActor, RLTTwinCritic, RLTokenDecoder, RLTokenEncoder
+from finearm.rl.algorithms.rltoken.networks import RLTConfig, RLTChunkActor, RLTTwinCritic, RLTokenDecoder, RLTokenEncoder
 
 
 def make_config(**overrides) -> RLTConfig:

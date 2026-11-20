@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import torch
 
-from rlt.replay import (
+from finearm.rl.replay import (
     COLLECTION_PHASE_WARMUP,
     PANTHERA_JOINT_NAMES,
     BoundaryContext,

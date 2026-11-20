@@ -4,18 +4,19 @@ Robot-arm VLA fine-tuning framework: teleop data collection, real-time chunked
 inference, and RL post-training on top of pre-trained VLA policies
 (pi0.5 / Panthera-HT arm).
 
-> **Status: early-stage restructuring.** The codebase is being migrated from a
-> deployment tree into the `finearm` package layout (see `REFACTOR_PLAN.md`).
-> During migration the existing entry points keep working unchanged.
+The `finearm` package owns all code; the surrounding directories hold
+per-machine assets (SDK, calibration), environments, data, and the LeRobot
+plugin packages. Adding an arm, a model adapter, or an RL algorithm = adding
+one plugin directory, nothing else changes.
 
 ## Repository layout
 
 | Path | Contents |
 |---|---|
-| `arm/panthera/` | Vendor SDK, per-machine calibration (`robot_param/`), daemon launcher (`run_daemon.sh`); the `panthera_control.*` modules are forwarding shims to `src/finearm/arms` |
-| `data/collect/panthera-lerobot-collect/` | LeRobot teleop collection stack (plugins, wrapper, docs); `collect_cli.py` is a forwarding shim to `src/finearm/data` |
-| `infer/` | Inference environment; `rtc_client.py` / `robot_interface.py` are forwarding shims to `src/finearm/infer` |
-| `RL/rlt_panthera/` | Online RL post-training (RL-Token): training loop, replay, learner, serving |
+| `arm/panthera/` | Per-machine arm assets: vendor SDK (gitignored), calibration (`robot_param/`), driver env (`init_env.sh`), daemon launcher (`run_daemon.sh`) |
+| `data/collect/panthera-lerobot-collect/` | LeRobot collection stack: robot/teleoperator plugins, launcher wrapper, operator docs |
+| `infer/` | Inference environment (openpi-client venv) |
+| `RL/rlt_panthera/` | RL run artifacts: campaign checkpoints/data (gitignored) and the stage-2 config; the code lives in `src/finearm/rl/` |
 | `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
 | `src/finearm/arms/` | Arm plugins: `ArmProfile` schema declaration + arm-neutral control daemon (`finearm-daemon --arm <id>`); `panthera_ht` (real) and `mock_twojoint` (extensibility demo) |
 | `src/finearm/infer/` | Model adapters (pi05 / lingbot / mock) + chunk executors: `RTCExecutor` (pipelined) and `StopAndGoExecutor`; `finearm-infer --exec-mode {rtc,stop-and-go}`; acquisition `robot_interface` (daemon IPC + cameras) |
@@ -90,10 +91,9 @@ cd <repo> && <collect-venv>/bin/pip install -e . --no-deps
 | Serve | openpi / lingbot serve on the GPU box (≥8 GB for π0.5 bf16) | GPU box |
 | Infer | `finearm-infer --model <name> --exec-mode rtc …` | infer venv (openpi-client) |
 
-Every legacy entry keeps working as a forwarding shim — `run_panthera_lerobot_collect.sh`,
-`python -m panthera_lerobot_control.collect_cli`, `infer/rtc_client.py`,
-`python -m panthera_control.cli` — operator muscle memory and existing
-scripts are unaffected.
+The collection launcher wrapper (`run_panthera_lerobot_collect.sh`) and the
+daemon launcher (`run_daemon.sh`) remain the recommended operational
+entries — both now drive the `finearm` modules directly.
 
 ### 1 · Arm daemon
 
@@ -130,7 +130,7 @@ finearm-collect --method teleop --live \
     --repo-id <namespace>/<dataset> --task "<task prompt>" \
     --episodes 1 --episode-seconds 30 --reset-seconds 60 \
     --fps 30 --hz 1000 --camera-fourcc MJPG
-# unchanged legacy path:
+# or the launcher wrapper (same flags, manages the venv for you):
 #   ./data/collect/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live …
 ```
 

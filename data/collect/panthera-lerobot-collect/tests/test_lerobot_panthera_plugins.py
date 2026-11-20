@@ -8,7 +8,7 @@ import unittest
 from contextlib import contextmanager
 from pathlib import Path
 
-from panthera_lerobot_control import DaemonDisconnectedError, StaleSnapshotError
+from finearm.arms.daemon import DaemonDisconnectedError, StaleSnapshotError
 
 
 OBSERVATION_KEYS = [

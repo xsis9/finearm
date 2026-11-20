@@ -36,11 +36,11 @@ Keys (console thread): 'e' estop · 'q' quit · 'c' critical phase toggle ·
 
 Usage:
   # dry-run preflight (no hardware, no server):
-  python scripts/train_stage2.py --config configs/stage2_panthera.json --dry_run
+  python -m finearm.rl.train_stage2 --config configs/stage2_panthera.json --dry_run
   # vla_only baseline (20 episodes, success-rate stats only):
-  python scripts/train_stage2.py --config configs/stage2_panthera.json --vla_only
+  python -m finearm.rl.train_stage2 --config configs/stage2_panthera.json --vla_only
   # online RL:
-  python scripts/train_stage2.py --config configs/stage2_panthera.json
+  python -m finearm.rl.train_stage2 --config configs/stage2_panthera.json
 """
 
 from __future__ import annotations
@@ -65,14 +65,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
-# Campaign configs name robot backends by their pre-Phase-5a module paths
-# (e.g. "robot.panthera_robot"); RL/rlt_panthera stays on sys.path so those
-# names resolve through the shims to finearm.rl.envs.
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_LEGACY_RL_DIR = _REPO_ROOT / "RL" / "rlt_panthera"
-if str(_LEGACY_RL_DIR) not in sys.path:
-    sys.path.insert(0, str(_LEGACY_RL_DIR))
 
 # Four-layer path resolution (CLI > env > configs/local.jsonc > repo-relative
 # defaults) — Phase 1 wiring, direct import since this file lives in the
@@ -184,7 +176,7 @@ def parse_args():
                         help="VLA q01/q99 stats json; fallback chain: this flag > "
                              "--config value > FINEARM_STATS_PATH > configs/local.jsonc")
     # robot
-    parser.add_argument("--robot_module", default="robot.robot_interface",
+    parser.add_argument("--robot_module", default="finearm.rl.envs.robot_interface",
                         help="module providing RobotInterface (adapted from the acquisition machine)")
     # episode / control
     parser.add_argument("--control_fps", type=float, default=30.0)

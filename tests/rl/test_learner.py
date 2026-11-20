@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from rlt.learner import (
+from finearm.rl.algorithms.rltoken.learner import (
     ACTOR_CONTRACT,
     RL_CHUNK_LENGTH,
     SCHEMA_VERSION,
@@ -24,8 +24,8 @@ from rlt.learner import (
     prepare_resume_checkpoint,
     sample_fixed_std_action,
 )
-from rlt.networks import RLTConfig, RLTChunkActor, RLTTwinCritic, clone_target_network
-from rlt.replay import (
+from finearm.rl.algorithms.rltoken.networks import RLTConfig, RLTChunkActor, RLTTwinCritic, clone_target_network
+from finearm.rl.replay import (
     BoundaryContext,
     ExecutionWindow,
     ReplayBuffer,

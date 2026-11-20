@@ -35,20 +35,11 @@ def test_dagger_stub_present_but_raises() -> None:
         dagger.DAggerCollector()
 
 
-def test_legacy_collect_cli_shim_aliases_teleop() -> None:
-    import sys
-    from pathlib import Path
+class TestArmParameterization:
+    """--arm derives the record command's plugin types and resume checks."""
 
-    pkg_dir = str(Path(__file__).resolve().parents[2] / "data" / "collect" / "panthera-lerobot-collect")
-    if pkg_dir not in sys.path:
-        sys.path.insert(0, pkg_dir)
-    from panthera_lerobot_control import collect_cli as legacy  # noqa: E402
-
-    assert legacy is sys.modules["finearm.data.collector.teleop"]
-
-
-class TestTeleopArmParameterization:
-    def _args(self, argv):
+    @staticmethod
+    def _args(argv):
         from finearm.data.collector.teleop import build_parser
 
         return build_parser().parse_args(argv)

@@ -41,18 +41,6 @@ def test_mock_obs_styles() -> None:
     assert raw["state"].shape == (14,)
 
 
-def test_legacy_adapters_shim_aliases_finearm_package() -> None:
-    infer_dir = str(REPO_ROOT / "infer")
-    if infer_dir not in sys.path:
-        sys.path.insert(0, infer_dir)
-    import adapters as legacy  # noqa: E402  (bench_rtt.py's import path)
-    import finearm.infer.adapters as real
-
-    assert legacy is real
-    assert legacy.available() == real.available()
-    assert callable(legacy.load) and callable(legacy.mock_obs)
-
-
 def test_lingbot_repo_resolution_or_skip() -> None:
     checkout = REPO_ROOT / "models" / "lingbot-vla-v2"
     if not checkout.is_dir():

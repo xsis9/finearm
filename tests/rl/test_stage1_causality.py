@@ -11,7 +11,7 @@ Pins the paper's Stage-1 contract on the ported encoder/decoder:
 
 import torch
 
-from rlt.networks import (
+from finearm.rl.algorithms.rltoken.networks import (
     RLTConfig,
     RLTokenDecoder,
     RLTokenEncoder,

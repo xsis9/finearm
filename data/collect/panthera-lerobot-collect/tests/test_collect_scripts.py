@@ -20,7 +20,7 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn("--live", text)
         self.assertIn("--hz", text)
         self.assertIn("--loop-hz", text)
-        self.assertIn("panthera_control.cli", text)
+        self.assertIn("finearm.arms.daemon.cli", text)
         self.assertIn(".venv/bin/python", text)
         self.assertRegex(text, r"(^|\n)PYTHONPATH=\"?\"?", "script should clear ROS-injected PYTHONPATH")
 
@@ -33,19 +33,19 @@ class CollectScriptsTests(unittest.TestCase):
         script = ROOT / "run_panthera_lerobot_collect.sh"
         text = script.read_text()
         mode = script.stat().st_mode
-        cli_text = (ROOT / "panthera_lerobot_control" / "collect_cli.py").read_text()
+        cli_text = (ROOT.parents[2] / "src" / "finearm" / "data" / "collector" / "teleop.py").read_text()
 
         self.assertTrue(mode & 0o111, "collect launcher should be executable")
         self.assertIn("--live", text)
         self.assertIn("--mock", text)
         self.assertIn("--hz", text)
         self.assertIn("--socket", text)
-        self.assertIn("panthera_lerobot_control.collect_cli", text)
+        self.assertIn("finearm.data.cli", text)
         self.assertIn("PANTHERA_PYTHON", text)
         self.assertIn(".venv/bin/python", text)
         self.assertIn(".venv-lerobot/bin/python", text)
         self.assertIn("PYTHONNOUSERSITE=1", text)
-        self.assertIn('PYTHONPATH="${ROOT_DIR}"', text)
+        self.assertIn('PYTHONPATH="${ROOT_DIR}/src"', text)
         self.assertIn("lerobot-record", cli_text)
 
     def test_collect_script_rejects_python_without_sibling_lerobot_record(self):
@@ -176,8 +176,6 @@ class CollectScriptsTests(unittest.TestCase):
             ROOT / "run_panthera_lerobot_collect.sh",
             ROOT / "run_panthera_lerobot_daemon.sh",
             ROOT / "scripts" / "init_workspace.sh",
-            ROOT / "panthera_lerobot_control" / "collect_cli.py",
-            ROOT / "panthera_lerobot_control" / "adapters.py",
             ROOT / "quest_bridge.py",
         ):
             text = path.read_text()
@@ -190,7 +188,7 @@ class CollectScriptsTests(unittest.TestCase):
         # 未设 PANTHERA_DATA_ROOT 时,数据集默认落 <deploy>/data/datasets。
         sys.path.insert(0, str(ROOT))
         try:
-            from panthera_lerobot_control.collect_cli import _default_data_root
+            from finearm.data.collector.teleop import _default_data_root
             expected = ROOT.parents[1] / "datasets"
             self.assertEqual(_default_data_root(), expected)
         finally:
@@ -264,14 +262,6 @@ class CollectScriptsTests(unittest.TestCase):
         packages = set(metadata["tool"]["setuptools"]["packages"])
         self.assertIn(dist_name, packages, "发行名必须是 packages 之一的同名插件包")
 
-        self.assertEqual(
-            metadata["project"]["scripts"]["panthera-control-daemon"],
-            "panthera_lerobot_control:main",
-        )
-        self.assertEqual(
-            metadata["project"]["scripts"]["panthera-lr-collect"],
-            "panthera_lerobot_control.collect_cli:main",
-        )
         # 只包含采集链路包;训练/推理包不属于本工具。
         self.assertEqual(
             set(metadata["tool"]["setuptools"]["packages"]),

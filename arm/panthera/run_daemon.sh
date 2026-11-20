@@ -101,4 +101,4 @@ if [[ "${live}" -eq 0 ]]; then
 fi
 
 cd "${ARM_ROOT}"
-exec "${PYTHON}" -m panthera_control.cli "${daemon_args[@]}"
+PYTHONPATH="${DEPLOY_ROOT}/src" exec "${PYTHON}" -m finearm.arms.daemon.cli "${daemon_args[@]}"
