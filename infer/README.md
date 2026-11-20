@@ -47,9 +47,10 @@
 #   训练 checkpoint 从训练机 rsync 到 checkpoints/pi05_panthera_p3/<exp>/
 cd <4090 上的 finearm/models/openpi>
 uv run scripts/serve_policy.py \
-    policy.config=pi05_panthera_p3 \
-    policy.dir=checkpoints/pi05_panthera_p3/panthera_p3/2000
-#    调试可加 record=True(记录每条请求的 obs/动作,事后核对输入)
+    policy:checkpoint \
+    --policy.config pi05_panthera_p3 \
+    --policy.dir checkpoints/pi05_panthera_p3/panthera_p3/2000
+#    调试可加 --record(记录每条请求的 obs/动作,事后核对输入)
 
 # lingbot(lingbot-vla-v2/PyTorch;启动前核对见下「lingbot-vla-2 关键信息」)
 # ⚠ 必须 cd 到仓库根再启动:robot config / norm_stats 都按相对路径解析,

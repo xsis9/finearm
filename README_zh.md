@@ -182,9 +182,10 @@ rsync -av <user>@<训练机>:<openpi树>/checkpoints/pi05_panthera_p3/<exp>/ \
     checkpoints/pi05_panthera_p3/<exp>/
 
 uv run scripts/serve_policy.py \
-    policy.config=pi05_panthera \
-    policy.dir=checkpoints/pi05_panthera/panthera_v2/10000
-# 默认端口 8000;调试可加 record=True(把每条请求的 obs/动作记到
+    policy:checkpoint \
+    --policy.config pi05_panthera \
+    --policy.dir checkpoints/pi05_panthera/panthera_v2/10000
+# 默认端口 8000;调试可加 --record(把每条请求的 obs/动作记到
 # policy_records/,事后核对输入)。norm-stats assets 随仓库自带。
 ```
 
