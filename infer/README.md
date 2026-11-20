@@ -1,5 +1,12 @@
 # 推理端(通用 VLA 实时推理 · 适配器架构)
 
+> **入口更新(Phase 3/5a)**:规范入口是 `finearm-infer --model <name> --exec-mode {rtc,stop-and-go}`
+> (`pip install -e . --no-deps` 进本环境后可用);本目录的 `rtc_client.py` 与
+> `robot_interface.py` 是转发 shim,全部历史命令/flag 照常工作。真实身:
+> 执行器/适配器在 `src/finearm/infer/`,采集后端在 `src/finearm/infer/robot_interface.py`。
+> 下文为保持历史记录原样,示例仍写 `rtc_client.py` —— 逐条可替换为
+> `finearm-infer … --exec-mode rtc`(flag 完全一致)。
+
 一套 RTC 客户端跑所有模型:执行器/控制环/安全逻辑模型无关(`rtc_client.py`),
 模型差异只存在 `adapters/<name>.py` 适配器里,`--model` 选择;机械臂/相机后端
 `robot_interface.py` 共用。**新增模型 = 写一个约 50 行的适配器,其他文件都不动。**

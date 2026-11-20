@@ -1,7 +1,16 @@
 # rlt_panthera
 
+> **代码已上移(Phase 5a/5b)**:算法/回放/服务/环境/训练环真身在
+> `src/finearm/rl/`(入口 `python -m finearm.rl.train_stage2` /
+> `python -m finearm.rl.serving.serve_rlt`;测试在仓库根 `tests/rl/`)。
+> 本目录保留:campaign 产物(`checkpoints/`、`data/`,gitignored)、配置副本、
+> 以及全部旧 import 路径的转发 shim(`rlt/*`、`scripts/*`、`robot/*`——
+> 旧命令、journal、checkpoint 继续可用)。下文为历史文档,布局描述以
+> `src/finearm/rl/` 为准。
+
+
 RL Token 在线强化学习框架（Panthera-HT + openpi π0.5 JAX 底座）。总计划见
-`/root/xsx/RL/PLAN.md`。
+总计划(REFACTOR_PLAN.md 与 finearm.rl 文档串)。
 
 本仓库从 [RL-Token-Pi05-open](https://github.com/Zhengsw03/RL-Token-Pi05-open)
 （lerobot PyTorch + SO-101）移植纯算法层，**零 openpi/lerobot 依赖**（仅
@@ -32,7 +41,7 @@ data/             # prefix_v1（预计算 embeddings）/ stage1_v1（stage1 chec
 ## 测试
 
 ```bash
-/root/xsx/openpi/.venv/bin/python -m pytest tests/ -q
+<openpi-venv>/bin/python -m pytest tests/ -q
 ```
 
 （任何带 torch≥2.5 / numpy 的 Python ≥3.11 均可；无需 GPU。）
@@ -57,7 +66,7 @@ data/             # prefix_v1（预计算 embeddings）/ stage1_v1（stage1 chec
 ```bash
 # A100 机上执行（仓库代码 + stage1 checkpoint；prefix_v1 的 57GB mmap 不需要去 4090）
 rsync -av --exclude 'data/prefix_v1' --exclude 'data/stage1_v1/checkpoint_step*' \
-  /root/xsx/RL/rlt_panthera/  root@<4090-ip>:/data/xsx/RL/rlt_panthera/
+  <本仓库>/RL/rlt_panthera/  <gpu-user>@<4090-ip>:<目标路径>/rlt_panthera/
 # 底座 checkpoint（若 4090 上还没有）
 rsync -av /root/xsx/openpi/checkpoints/pi05_panthera_p3/  root@<4090-ip>:/data/xsx/openpi/checkpoints/
 # 975 字节的 meta.json 单独补上（恢复同源四件套校验；缺它只是跳过校验，不影响运行）

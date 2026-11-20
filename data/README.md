@@ -67,6 +67,22 @@ cd <仓库根>   # 项目根;下面所有相对路径一律按仓库根解析(�
 无本机硬编码;`--sdk-root` 缺省即 `arm/panthera/sdk/Panthera-HT_SDK`,无需再传;
 方式②③的逐终端命令、参数含义、安全须知见操作手册 quest2ros_setup.md。)
 
+规范入口(Phase 4 起,flag 与 wrapper 完全一致;`pip install -e . --no-deps`
+装进采集 venv 后可用):
+
+```bash
+finearm-collect --method teleop --live \
+    --leader-config arm/panthera/robot_param/Leader.yaml \
+    --follower-config arm/panthera/robot_param/Follower.yaml \
+    --select-cameras \
+    --repo-id bolt/test3 --task "pick up the bolt and place it on the nut" \
+    --episodes 1 --episode-seconds 30 --reset-seconds 60 \
+    --fps 30 --hz 1000 --teleop-gripper-squeeze-boost 1.0 --camera-fourcc MJPG
+```
+
+采集真身在 `src/finearm/data/`(`collect_cli.py` 是转发 shim);DAgger 采集方式
+是注册表占位(`finearm.data.collector.dagger`,调用即提示未实现)。
+
 ## 首次环境搭建
 
 ```bash
