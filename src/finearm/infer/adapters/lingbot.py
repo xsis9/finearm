@@ -4,7 +4,7 @@ Server (4090): lingbot-vla-v2 repo `python -m deploy.lingbot_vla_v2_policy`
 (PyTorch/bf16), default port 8006. Observations use the dataset's raw feature
 names (14-dim state + raw 640×480 frames; the server resizes to 256×256);
 replies come back keyed by the robot config's raw action names and are
-reassembled here into (T,7). Server startup and pitfalls: envs/infer/README.md.
+reassembled here into (T,7). Server startup and pitfalls: docs/infer.md.
 """
 import sys
 
@@ -31,7 +31,7 @@ def _lingbot_repo_root():
     if not lingbot.is_dir():
         raise RuntimeError(
             f"lingbot-vla-v2 checkout not found at {lingbot} "
-            "(gitignored; see fetch_models instructions in envs/infer/README.md)"
+            "(gitignored; see fetch_models instructions in docs/infer.md)"
         )
     return lingbot
 

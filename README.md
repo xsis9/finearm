@@ -36,12 +36,12 @@ and RL post-training.
 
 | Stage | Environment | Full how-to |
 |---|---|---|
-| Arm daemon | `envs/arm/` (or any venv with the vendor SDK) | [`arm/panthera/README.md`](arm/panthera/README.md) |
-| Collect (teleop) | `envs/collect/` (LeRobot 0.5.1) | [`data/README.md`](data/README.md) · operator manual [`quest2ros_setup.md`](plugins/panthera-lerobot-collect/docs/quest2ros_setup.md) |
-| Fine-tune (SFT) | GPU box (`uv sync`) | [`models/README.md`](models/README.md) |
-| Serve | GPU box (≥8 GB VRAM for π0.5 bf16) | [`envs/infer/README.md`](envs/infer/README.md) |
-| Infer | `envs/infer/` on the executor box | safety ladder in [`envs/infer/README.md`](envs/infer/README.md) |
-| RL post-training | `envs/infer/` (+ torch) | [`RL/rlt_panthera/README.md`](RL/rlt_panthera/README.md) |
+| Arm daemon | `envs/arm/` (or any venv with the vendor SDK) | [`docs/daemon.md`](docs/daemon.md) |
+| Collect (teleop) | `envs/collect/` (LeRobot 0.5.1) | [`docs/collect.md`](docs/collect.md) · operator manual [`quest2ros_setup.md`](plugins/panthera-lerobot-collect/docs/quest2ros_setup.md) |
+| Fine-tune (SFT) | GPU box (`uv sync`) | [`docs/sft.md`](docs/sft.md) |
+| Serve | GPU box (≥8 GB VRAM for π0.5 bf16) | [`docs/infer.md`](docs/infer.md) |
+| Infer | `envs/infer/` on the executor box | safety ladder in [`docs/infer.md`](docs/infer.md) |
+| RL post-training | `envs/infer/` (+ torch) | [`docs/rl.md`](docs/rl.md) |
 
 ## License
 

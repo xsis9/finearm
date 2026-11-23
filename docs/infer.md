@@ -1,6 +1,6 @@
-# infer · inference environment
+# infer · serving # infer · inference environment inference
 
-[English](README.md) · [中文](README_zh.md)
+[English](infer.md) · [中文](infer_zh.md)
 
 The inference client environment (openpi-client venv). The client CODE
 lives in `src/finearm/infer/` — model adapters, chunk executors

@@ -1,6 +1,6 @@
-# models · fine-tuning (SFT)
+# sft · fine-tuning (SFT)
 
-[English](README.md) · [中文](README_zh.md)
+[English](sft.md) · [中文](sft_zh.md)
 
 This directory holds the model trees: the vendored **modified openpi**
 (`openpi/`, the runnable training/serving tree) and the heavy local
@@ -57,4 +57,4 @@ scripts). Exact delta: [`third_party/patches/openpi-panthera.patch`](../third_pa
 Rebase onto a newer upstream: checkout upstream, apply the patch.
 
 Next step — serving the checkpoint on the GPU box:
-[`envs/infer/README.md`](../envs/infer/README.md).
+[`infer.md`](infer.md).

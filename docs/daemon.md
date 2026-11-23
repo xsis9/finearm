@@ -1,6 +1,6 @@
-# arm/panthera · Panthera-HT driver assets
+# daemon · Panthera-HT driver assets
 
-[English](README.md) · [中文](README_zh.md)
+[English](daemon.md) · [中文](daemon_zh.md)
 
 Per-machine arm assets. The daemon CODE lives in `src/finearm/arms/`
 (canonical entry `finearm-daemon --arm panthera_ht`; `run_daemon.sh` here

@@ -1,4 +1,4 @@
-# rlt_panthera
+# rl · RL 后训练(rltoken)
 
 > **本目录只存 run 产物与配置**:`checkpoints/`、`data/`(gitignored 的
 > campaign checkpoints / stage-1 权重 / stats)与 `configs/stage2_panthera.json`。

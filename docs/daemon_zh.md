@@ -1,6 +1,6 @@
-# arm/panthera · Panthera-HT 驱动资产
+# daemon · Panthera-HT 驱动资产
 
-[English](README.md) · [中文](README_zh.md)
+[English](daemon.md) · [中文](daemon_zh.md)
 
 本机机械臂资产目录。daemon **代码**在 `src/finearm/arms/`(规范入口
 `finearm-daemon --arm panthera_ht`;本目录的 `run_daemon.sh` 直接驱动它)。

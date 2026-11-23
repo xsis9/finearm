@@ -6,4 +6,4 @@ its Python deps (pyyaml/scipy/pinocchio). Built by
 
 The machine assets it drives (vendor SDK, calibration `robot_param/`,
 daemon launcher) stay in [`arm/panthera/`](../../arm/panthera/) — see
-[arm/panthera/README.md](../../arm/panthera/README.md).
+[docs/daemon.md](../../docs/daemon.md).

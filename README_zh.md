@@ -34,12 +34,12 @@ VLA 微调框架:遥操作数据采集、微调、推理、以及强化学习后
 
 | 环节 | 环境 | 完整文档 |
 |---|---|---|
-| 臂 daemon | `envs/arm/`(或任意装了厂商 SDK 的 venv) | [`arm/panthera/README_zh.md`](arm/panthera/README_zh.md) |
-| 采集(teleop) | `envs/collect/`(LeRobot 0.5.1) | [`data/README_zh.md`](data/README_zh.md) · 操作手册 [`quest2ros_setup.md`](plugins/panthera-lerobot-collect/docs/quest2ros_setup.md) |
-| 微调(SFT) | GPU 机(`uv sync`) | [`models/README_zh.md`](models/README_zh.md) |
-| 服务 | GPU 机(π0.5 bf16 需 ≥8 GB) | [`envs/infer/README_zh.md`](envs/infer/README_zh.md) |
-| 推理 | 执行机的 `envs/infer/` | 安全阶梯见 [`envs/infer/README_zh.md`](envs/infer/README_zh.md) |
-| RL 后训练 | `envs/infer/`(+ torch) | [`RL/rlt_panthera/README.md`](RL/rlt_panthera/README.md) |
+| 臂 daemon | `envs/arm/`(或任意装了厂商 SDK 的 venv) | [`docs/daemon_zh.md`](docs/daemon_zh.md) |
+| 采集(teleop) | `envs/collect/`(LeRobot 0.5.1) | [`docs/collect_zh.md`](docs/collect_zh.md) · 操作手册 [`quest2ros_setup.md`](plugins/panthera-lerobot-collect/docs/quest2ros_setup.md) |
+| 微调(SFT) | GPU 机(`uv sync`) | [`docs/sft_zh.md`](docs/sft_zh.md) |
+| 服务 | GPU 机(π0.5 bf16 需 ≥8 GB) | [`docs/infer_zh.md`](docs/infer_zh.md) |
+| 推理 | 执行机的 `envs/infer/` | 安全阶梯见 [`docs/infer_zh.md`](docs/infer_zh.md) |
+| RL 后训练 | `envs/infer/`(+ torch) | [`docs/rl.md`](docs/rl.md) |
 
 ## 许可
 

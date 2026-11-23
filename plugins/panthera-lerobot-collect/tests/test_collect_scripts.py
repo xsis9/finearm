@@ -234,21 +234,15 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn('PANTHERA_CAM_LOCK:-${REPO_ROOT}/utils/lock_cameras.sh', wrapper)
 
     def test_readmes_direct_users_to_lock_cameras_first(self):
-        # 采集(data/)与推理(infer/;Phase 2 起 envs/infer/)的 README——
-        # 中英双份——都必须写明:相机参数必须与训练/推理一致,并给出
+        # 采集与推理的手册(docs/collect*.md、docs/infer*.md)——中英双份——
+        # 都必须写明:相机参数必须与训练/推理一致,并给出
         # bash utils/lock_cameras.sh(仓库根执行)。说明文字按各自语言
-        # 匹配实质,不绑定单一中文文案(README 已是中英双份)。
-        infer_dir = next(
-            (d for d in (REPO / "infer", REPO / "envs" / "infer") if (d / "README.md").is_file()),
-            None,
-        )
-        self.assertIsNotNone(infer_dir, "infer/ 下应有 README.md(Phase 2 起为 envs/infer/)")
-
+        # 匹配实质,不绑定单一中文文案。
         for readme, phrase in (
-            (REPO / "data" / "README.md", "camera params must match"),
-            (REPO / "data" / "README_zh.md", "相机参数必须与训练/推理一致"),
-            (infer_dir / "README.md", "camera params must match"),
-            (infer_dir / "README_zh.md", "相机参数必须与训练/推理一致"),
+            (REPO / "docs" / "collect.md", "camera params must match"),
+            (REPO / "docs" / "collect_zh.md", "相机参数必须与训练/推理一致"),
+            (REPO / "docs" / "infer.md", "camera params must match"),
+            (REPO / "docs" / "infer_zh.md", "相机参数必须与训练/推理一致"),
         ):
             text = readme.read_text()
             self.assertIn("utils/lock_cameras.sh", text, f"{readme} missing camera-lock step")

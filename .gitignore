@@ -11,8 +11,6 @@
 /arm/panthera/LiteArm-A1/
 /models/*
 !/models/openpi/
-!/models/README.md
-!/models/README_zh.md
 /models/openpi/.venv/
 /models/openpi/checkpoints/
 /models/openpi/data/

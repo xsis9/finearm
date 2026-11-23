@@ -1,6 +1,6 @@
-# models · 微调(SFT)
+# sft · 微调(SFT)
 
-[English](README.md) · [中文](README_zh.md)
+[English](sft.md) · [中文](sft_zh.md)
 
 本目录承载模型树:vendored 的 **修改版 openpi**(`openpi/`,可直接训练/服务
 的树)与不入 git 的重资产(基线权重、checkpoint、数据集——见 `.gitignore`)。
@@ -53,4 +53,4 @@ checkpoint 落在 `checkpoints/pi05_panthera_p3/<exp_name>/`。逐 checkpoint
 跟上游更新:checkout 上游后应用补丁。
 
 下一步——在 GPU 机上服务 checkpoint:
-[`envs/infer/README_zh.md`](../envs/infer/README_zh.md)。
+[`infer_zh.md`](infer_zh.md)。

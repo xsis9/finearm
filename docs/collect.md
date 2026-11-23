@@ -1,6 +1,6 @@
-# data · collection domain
+# collect · data collection
 
-[English](README.md) · [中文](README_zh.md)
+[English](collect.md) · [中文](collect_zh.md)
 
 Data-collection **outputs**: the dataset hub (`data/datasets/`) and logs.
 The collection stack (LeRobot plugins, launcher, operator manual) lives in
@@ -23,7 +23,7 @@ data/
 ./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --install
 ./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --check     # verify
 
-# driver env for the daemon (see arm/panthera/README.md):
+# driver env for the daemon (see docs/daemon.md):
 ./envs/arm/init_env.sh
 
 # finearm console entries into the collect env (one-time):

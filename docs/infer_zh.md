@@ -1,6 +1,6 @@
-# infer · 推理环境
+# infer · 服务与推理
 
-[English](README.md) · [中文](README_zh.md)
+[English](infer.md) · [中文](infer_zh.md)
 
 推理客户端环境(openpi-client venv)。客户端**代码**在 `src/finearm/infer/`
 ——模型适配器、分块执行器(`finearm-infer --exec-mode {rtc,stop-and-go}`)、

@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
                     help="执行器:rtc=流水线单在途请求(默认,连续运动);"
                          "stop-and-go=每窗阻塞推理新鲜参考(混合部署 actor 段语义)")
     ap.add_argument("--model", required=True, choices=adapters_available(),
-                    help="模型适配器(finearm/infer/adapters/ 目录;新增模型见 envs/infer/README.md)")
+                    help="模型适配器(finearm/infer/adapters/ 目录;新增模型见 docs/infer.md)")
     ap.add_argument("--host", required=True, help="推理服务器 IP(走 ssh 隧道时 127.0.0.1)")
     ap.add_argument("--port", type=int, default=None, help="缺省用适配器默认端口")
     ap.add_argument("--task", default="pick up the bolt and place it on the nut",

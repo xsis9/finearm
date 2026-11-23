@@ -1,6 +1,6 @@
-# data · 数据域
+# collect · 数据采集
 
-[English](README.md) · [中文](README_zh.md)
+[English](collect.md) · [中文](collect_zh.md)
 
 数据采集的**产出**:数据集枢纽(`data/datasets/`)与日志。采集栈(LeRobot 插件、
 启动器、操作手册)在 `plugins/panthera-lerobot-collect/`;采集**代码**在
@@ -21,7 +21,7 @@ data/
 ./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --install
 ./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --check     # 校验
 
-# daemon 驱动环境(见 arm/panthera/README_zh.md):
+# daemon 驱动环境(见 docs/daemon_zh.md):
 ./envs/arm/init_env.sh
 
 # 采集环境装 finearm 命令行入口(一次性):
