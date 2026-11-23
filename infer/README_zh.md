@@ -70,9 +70,15 @@ finearm-infer --model pi05 --host 127.0.0.1 --exec-mode rtc --task "<训练 prom
 执行机预检:
 
 ```bash
+bash utils/lock_cameras.sh                              # 永远第一步:相机参数必须与训练/推理一致
 python -m finearm.infer.robot_interface --selftest --dump-obs /tmp/rtc_obs   # 相机/时延/图像方向
 PYTHONPATH=src python -m finearm.rl.scripts.bench_rtt --model <name> --host 127.0.0.1   # RTT + 建议 k
 ```
+
+相机锁定不只是一次性预检:采集后端(`finearm.infer.robot_interface`)启动时
+会自动执行 `utils/lock_cameras.sh`——与采集端共用的同一份权威档案。UVC
+相机重插/断电后参数会复位,参数不一致会让观测分布悄悄偏离训练态。
+`PANTHERA_CAM_LOCK` 覆盖脚本路径;`PANTHERA_CAM_LOCK_SKIP=1` 跳过(仅调试)。
 
 ## 常用参数
 
@@ -84,6 +90,7 @@ PYTHONPATH=src python -m finearm.rl.scripts.bench_rtt --model <name> --host 127.
 | `--k/--blend/--starve` | replan 余量 / 混合步数 / 断档策略(`hold` 或 `stop`) |
 | `--pos-lo/--pos-hi/--vel-limit` | 显式限幅(臂侧只保留逐拍跳变兜底) |
 | `PANTHERA_CAM_FRONT/WRIST` | 相机源(默认 `/dev/video4`、`/dev/video2`) |
+| `PANTHERA_CAM_LOCK/SKIP` | 相机锁定脚本路径覆盖 / `=1` 跳过(仅调试) |
 
 ## 新增模型适配器
 

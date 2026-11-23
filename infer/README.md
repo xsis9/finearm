@@ -72,9 +72,18 @@ finearm-infer --model pi05 --host 127.0.0.1 --exec-mode rtc --task "<training pr
 Pre-flight on the executor box:
 
 ```bash
+bash utils/lock_cameras.sh                              # FIRST: camera params must match training/inference
 python -m finearm.infer.robot_interface --selftest --dump-obs /tmp/rtc_obs   # cameras/latency/orientation
 PYTHONPATH=src python -m finearm.rl.scripts.bench_rtt --model <name> --host 127.0.0.1   # RTT + suggested k
 ```
+
+The camera lock is not just manual pre-flight: the acquisition backend
+(`finearm.infer.robot_interface`) auto-runs `utils/lock_cameras.sh` at
+startup against the same authoritative profile collection verifies
+against — UVC params reset on replug/power-cycle, so a mismatched camera
+silently shifts the observation distribution vs training. Override the
+script with `PANTHERA_CAM_LOCK`; skip (debug only) with
+`PANTHERA_CAM_LOCK_SKIP=1`.
 
 ## Key parameters
 
@@ -86,6 +95,7 @@ PYTHONPATH=src python -m finearm.rl.scripts.bench_rtt --model <name> --host 127.
 | `--k/--blend/--starve` | replan margin / blend steps / starvation policy (`hold` or `stop`) |
 | `--pos-lo/--pos-hi/--vel-limit` | explicit limits (the arm side only keeps a per-tick jump guard) |
 | `PANTHERA_CAM_FRONT/WRIST` | camera sources (default `/dev/video4`, `/dev/video2`) |
+| `PANTHERA_CAM_LOCK/SKIP` | camera-lock script override / `=1` to skip (debug only) |
 
 ## Adding a model adapter
 
