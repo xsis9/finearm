@@ -20,7 +20,7 @@ finearm-infer = "finearm.infer.cli:main"
 finearm-collect = "finearm.data.cli:main"
 
 # Phase 1: src-layout installable package (finearm.core only, stdlib deps).
-# Domain extras (robot/data/infer/rl) land with their phases per REFACTOR_PLAN.md.
+# Domain extras (robot/data/infer/rl) land with their phases per the archived refactor plan (git history).
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -37,7 +37,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 # Bootstrap gate: catch broken code only. The full rule set is tightened phase by
-# phase as modules move into src/finearm (REFACTOR_PLAN.md Phase 8).
+# phase as modules move into src/finearm (the archived refactor plan (git history) Phase 8).
 select = ["E4", "E7", "E9", "F"]
 ignore = [
     "E401", # multiple imports on one line (cosmetic; legacy tests)

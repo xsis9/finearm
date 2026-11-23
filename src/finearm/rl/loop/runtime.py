@@ -1,4 +1,4 @@
-"""Execution-runtime state moved out of replay (Phase 5b, REFACTOR_PLAN §五).
+"""Execution-runtime state moved out of replay (Phase 5b, the archived refactor plan (git history) §五).
 
 ``RerunVisualizationManager`` and ``TakeoverState`` are loop/execution
 concerns (visualization cadence, HIL takeover bookkeeping), not replay

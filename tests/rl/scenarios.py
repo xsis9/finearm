@@ -1,4 +1,4 @@
-"""Deterministic offline scenarios for the Phase 5b red line (REFACTOR_PLAN
+"""Deterministic offline scenarios for the Phase 5b red line (the archived refactor plan, git history
 §五): rtc-mode transitions produced by the episode loop must be reproducible
 field-for-field across the interface refactor.
 

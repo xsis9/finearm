@@ -1,6 +1,6 @@
 """Four-layer configuration resolution, JSONC loading, and local overrides.
 
-Layer model (REFACTOR_PLAN.md §7, confirmed 2026-11-19):
+Layer model (the archived refactor plan (git history) §7, confirmed 2026-11-19):
 
 1. explicit CLI arguments (the caller's argparse)  — highest
 2. environment variables (explicit names per key)

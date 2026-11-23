@@ -1,6 +1,6 @@
 """Repository-root discovery and built-in repo-relative default paths.
 
-Layer 4 of the four-layer configuration model (REFACTOR_PLAN.md §7):
+Layer 4 of the four-layer configuration model (the archived refactor plan (git history) §7):
 CLI arguments > environment variables > ``configs/local.jsonc`` >
 repo-relative defaults (this module). The repo stores no machine identity:
 any clone on any machine works out of the box and defaults follow the
@@ -20,11 +20,15 @@ from . import config
 ROOT_ENV = "FINEARM_ROOT"
 
 #: Built-in defaults (layer 4). Relative entries resolve against the repo
-#: root; absolute entries are used as-is.
+#: root; absolute entries are used as-is. The acquisition backend has NO
+#: entry here on purpose: its default is the
+#: ``finearm.infer.robot_interface`` package module (see
+#: ``rl/envs/panthera/robot.py``); PANTHERA_ACQ_IFACE / local.jsonc
+#: overrides load a custom file. A stale repo-path default for it once
+#: dangled after the src-layout move (fixed 2026-11) — keep it out.
 DEFAULT_PATHS: dict[str, str] = {
     "dataset_root": "data/datasets",
     "sdk_root": "arm/panthera/sdk",
-    "acquisition_interface": "infer/robot_interface.py",
     "socket_dir": "/tmp",
 }
 

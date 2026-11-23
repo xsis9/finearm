@@ -10,7 +10,7 @@ Conventions (mirrors ``infer/adapters`` — "the filename is the registry"):
   attribute (``ADAPTER`` / ``ALGORITHM_ID`` / ``PROFILE`` / ...).
 
 No entry points: plugin discovery must work from an uninstalled checkout
-(REFACTOR_PLAN.md design principle 4).
+(the archived refactor plan (git history) design principle 4).
 """
 
 from __future__ import annotations

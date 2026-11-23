@@ -3,7 +3,7 @@
 One-command wrapper: preflight → daemon lifecycle → camera preflight/preview →
 lerobot-record bridging → cleanup. Exposed as the ``teleop`` Collector plugin;
 ``--arm <id>`` derives the LeRobot robot/teleop plugin types and the resume
-schema from the arm profile (REFACTOR_PLAN.md §3d). The flow itself is
+schema from the arm profile (the archived refactor plan (git history) §3d). The flow itself is
 unchanged from the pre-Phase-4 implementation (locked by the data suite).
 """
 

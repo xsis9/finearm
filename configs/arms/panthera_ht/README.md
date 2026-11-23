@@ -1,7 +1,7 @@
 # panthera_ht — per-arm configuration home
 
 This directory is the user-editable home for panthera_ht machine-side
-configuration (REFACTOR_PLAN.md §3a).
+configuration (the archived refactor plan (git history) §3a).
 
 ## Calibration YAMLs (opt-in override)
 

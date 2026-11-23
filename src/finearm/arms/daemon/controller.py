@@ -1,6 +1,6 @@
 """Arm-neutral control loop and daemon lifecycle.
 
-The loop, mode machine, and fail-safe hold are arm-agnostic (REFACTOR_PLAN.md
+The loop, mode machine, and fail-safe hold are arm-agnostic (the archived refactor plan (git history)
 §3a): dimensions come from the arm's :class:`~finearm.arms.profile.ArmProfile`,
 gains from its ``ControlGains``, and hardware adapters from its factory
 functions. The legacy name ``PantheraControlError`` is an alias of

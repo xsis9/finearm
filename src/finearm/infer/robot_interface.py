@@ -1,10 +1,10 @@
 """Panthera-HT 机械臂/相机后端 —— 各推理客户端共用。
 
-Moved from ``deploy/infer/robot_interface.py`` in Phase 5a (that path is
-now a shim): daemon IPC via ``finearm.arms.daemon.ipc``(Phase 2 真身),
-相机锁定脚本经 ``finearm.core.paths`` 按仓库根定位。逻辑逐字未动。
+历史:Phase 5a 从旧 deploy 树的 infer/robot_interface.py 迁入本包。
+daemon IPC 走 ``finearm.arms.daemon.ipc``,相机锁定脚本经
+``finearm.core.paths`` 按仓库根定位。逻辑逐字未动。
 
-经机械臂驱动层(deploy/arm 的 daemon IPC,默认 /tmp/panthera_lerobot_control.sock)
+经机械臂驱动层(arm daemon 的 IPC,默认 /tmp/panthera_lerobot_control.sock)
 读状态、下发动作;
 双相机由后台线程取流,只保留最新帧。构造时自动完成:锁相机参数 → 开流 → 归位 → 进 policy 模式。
 

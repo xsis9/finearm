@@ -2,7 +2,7 @@
 
 ``finearm.core`` must stay importable with a pure standard library — it is
 installed into every environment (including the 4090 openpi venv), so a heavy
-or broken import here would break everything (REFACTOR_PLAN.md design
+or broken import here would break everything (the archived refactor plan (git history) design
 principle 3). Module-level code must never read config files: resolution
 happens inside functions only.
 """

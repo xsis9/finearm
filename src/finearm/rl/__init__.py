@@ -1,6 +1,6 @@
 """finearm.rl — Stage-2 online RL domain (Phase 5a moved from RL/rlt_panthera).
 
-Layout (REFACTOR_PLAN.md §一/§五):
+Layout (the archived refactor plan (git history) §一/§五):
 - ``algorithms/rltoken``: pure torch RL-Token components (networks, critical,
   learner) — zero openpi/lerobot imports.
 - ``replay``: journal + stride-2 transition construction.

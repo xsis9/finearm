@@ -7,11 +7,10 @@ gone: the default acquisition backend is now a package module
 configs/local.jsonc ``acquisition_interface`` override still load a
 custom file.
 
-Wraps the acquisition machine's ``deploy/infer/robot_interface.py`` (uploaded
-verbatim to /root/xsx/infer/robot_interface.py on the A100; NOT vendored —
-loaded from the deploy tree at runtime so the acquisition implementation
-stays the single source of truth) into the Stage-2 ``RobotInterface``
-contract consumed by ``scripts/train_stage2.py``.
+Wraps the acquisition implementation — the same
+``finearm.infer.robot_interface`` the inference ladder uses (daemon IPC +
+cameras; single source of truth for observation/action) — into the
+Stage-2 ``RobotInterface`` contract consumed by ``scripts/train_stage2.py``.
 
 Adaptation decisions (2026-11-13):
 
@@ -44,9 +43,9 @@ Adaptation decisions (2026-11-13):
   physical e-stop remains the real safety stop.
 
 Env:
-  PANTHERA_ACQ_IFACE   path to the acquisition robot_interface.py
-                       (default: <repo>/infer/robot_interface.py via
-                       finearm.core; see _acquisition_candidates)
+  PANTHERA_ACQ_IFACE   path to a custom acquisition robot_interface.py
+                       (default: the finearm.infer.robot_interface package
+                       module — no repo path involved)
   PANTHERA_MOCK_IMAGES "1" → zero-image mock cameras (link testing; the arm
                        daemon is still required)
   PANTHERA_RTC_HOME    home pose "j1,...,j6,gripper" (acquisition default)

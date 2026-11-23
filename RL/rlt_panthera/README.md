@@ -9,7 +9,7 @@
 
 
 RL Token 在线强化学习框架（Panthera-HT + openpi π0.5 JAX 底座）。总计划见
-总计划(REFACTOR_PLAN.md 与 finearm.rl 文档串)。
+总计划(the archived refactor plan (git history) 与 finearm.rl 文档串)。
 
 本仓库从 [RL-Token-Pi05-open](https://github.com/Zhengsw03/RL-Token-Pi05-open)
 （lerobot PyTorch + SO-101）移植纯算法层，**零 openpi/lerobot 依赖**（仅
@@ -103,26 +103,25 @@ pip install openpi-client   # torch CPU 版随 rlt 包需要（learner 2×256 ML
 # 1) 开隧道（保持窗口常开；4090 容器内 serve_rlt 已启动）
 ssh -c aes128-gcm@openssh.com -N -L 8000:127.0.0.1:8000 root@192.168.110.46
 
-# 2) 接真机前检查：robot/panthera_robot.py 适配层已就绪（包装采集机
-#    deploy/infer/robot_interface.py，默认自动在 ~/internship/baiqin/deploy/infer/
-#    找到它；可用 PANTHERA_ACQ_IFACE 指定路径）。要点：
+# 2) 接真机前检查：panthera 适配层已就绪（包装采集后端
+#    finearm.infer.robot_interface 包模块；PANTHERA_ACQ_IFACE 可指向自定义文件）。要点：
 #    · 观测走 raw 640×480 帧（服务端 resize 与训练同分布；勿用 224 预缩放）
 #    · v1 未接 HIL 人工流（daemon 无遥操作接口），'h'/'s' 键暂为 no-op
 #    · PANTHERA_MOCK_IMAGES=1 可不接相机联调（arm daemon 仍需在跑）
-/home/xsx/internship/baiqin/deploy/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json --dry_run
+envs/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json --dry_run
 
 # 3) 上机顺序（安全协议，逐步推进）：
-/home/xsx/internship/baiqin/deploy/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json --vla_only --max_episodes 10
-/home/xsx/internship/baiqin/deploy/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json            # warmup 15 集 → 'c'+'a' 小规模 actor
+envs/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json --vla_only --max_episodes 10
+envs/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json            # warmup 15 集 → 'c'+'a' 小规模 actor
 ```
 
-**rtc_mode（连续运动，推荐先对比再选）**：`--rtc_mode` 启用 deploy rtc_client 同款流水线执行——
+**rtc_mode（连续运动，推荐先对比再选）**：`--rtc_mode` 启用生产 RTC 流水线(单在途请求 + 提前 k 步触发)执行——
 剩 k 步（k 按 RTT p95 自适应）时用当前观测异步重规划、窗边界对齐+混合切换，机械臂连续运动。
 reference/z_rl 元组为触发时刻（≈RTT 前移）；stride-2/terminal replay 边界仍按真实边界观测物化。
 默认关（stop-and-go，论文 Algorithm 1 原版语义）。用 vla_only 各跑 20 集对比成功率后决定训练节奏：
 
 ```bash
-/home/xsx/internship/baiqin/deploy/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json --rtc_mode --vla_only --max_episodes 20
+envs/infer/.venv/bin/python scripts/train_stage2.py --config configs/stage2_panthera.json --rtc_mode --vla_only --max_episodes 20
 ```
 
 键位：`e` 急停 · `q` 退出 · `c` 关键段开关 · `a` actor 开关（需先 `c`）· `g` 跳集 ·
@@ -192,7 +191,7 @@ python3 ~/rlt_panthera/scripts/bench_rtt.py --host 127.0.0.1 --port 8000 --reque
 ### 今日代码/配置改动
 
 - `scripts/train_stage2.py`：**每集开始自动 `ACTOR_ENABLED=False`**（打印 `[KEY] Actor auto-off at episode start`）——修复 `a` 跨集粘滞；
-- `deploy/infer/robot_interface.py`：`_go_home` 插值 `move_s` **6.0s→2.5s**（`__init__` 的 `home_move_s` 与 `_go_home` 默认值两处）；归位从最坏 14s 降到 ~10.5s；
+- 采集后端(现 `src/finearm/infer/robot_interface.py`)：`_go_home` 插值 `move_s` **6.0s→2.5s**（`__init__` 的 `home_move_s` 与 `_go_home` 默认值两处）；归位从最坏 14s 降到 ~10.5s；
 - 训练配方：`--online_q_weight 0.3 --online_bc_weight 20`（防剥削）、`--actor_max_relative_target` 按关节（臂 0.05、**夹爪 0.25**——标量 0.05 会掐慢夹爪）、`--save_every 10`。
 
 ### 操作规约（已与操作者对齐）
@@ -251,7 +250,7 @@ python3 ~/rlt_panthera/scripts/bench_rtt.py --host 127.0.0.1 --port 8000 --reque
 
 ### 部署设计（当日定稿，待实现）
 
-**混合执行模式**：VLA 接近段用生产 RTCRunner 流水线（`deploy/infer/rtc_client.py` 模式，单在途请求 + 提前 k 步触发，连续运动；train_stage2 内已有移植 `PipelinedChunkProvider`）；按 `c`+`a` 切换后 actor 段用**同步 stop-and-go**（新鲜 ref + 均值 + 逐关节限幅）；出关键段切回流水线。
+**混合执行模式**：VLA 接近段用生产 RTCRunner 流水线（生产 RTC 流水线模式，单在途请求 + 提前 k 步触发，连续运动；train_stage2 内已有移植 `PipelinedChunkProvider`）；按 `c`+`a` 切换后 actor 段用**同步 stop-and-go**（新鲜 ref + 均值 + 逐关节限幅）；出关键段切回流水线。
 
 正确性论证：actor 的三个输入（z_rl/proprio/ref_chunk）全部来自切换后同步回路的新鲜推理 = **与训练分布完全对称**（训练全程 rtc_mode=false）；VLA 段节奏只影响到达时状态（二阶差异，流畅到达更稳）；训练测得的成功率本来就含 stop-and-go 节奏，数字可迁移；切换的一次 RTT 停顿落在对准起点，对本任务无害甚至有利。
 

@@ -25,4 +25,5 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+# 所有 venv 一律在 envs/<域>/ 下;此处通配保证其不入库
 .venv*/

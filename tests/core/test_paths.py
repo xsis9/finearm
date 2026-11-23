@@ -33,10 +33,13 @@ class TestDefaultPath:
     def test_relative_defaults_anchor_at_repo(self, fake_repo: Path) -> None:
         assert paths.default_path("dataset_root", repo=fake_repo) == fake_repo / "data" / "datasets"
         assert paths.default_path("sdk_root", repo=fake_repo) == fake_repo / "arm" / "panthera" / "sdk"
-        assert (
-            paths.default_path("acquisition_interface", repo=fake_repo)
-            == fake_repo / "infer" / "robot_interface.py"
-        )
+
+    def test_acquisition_interface_has_no_repo_path_default(self, fake_repo: Path) -> None:
+        # The acquisition backend defaults to the finearm.infer.robot_interface
+        # package module — a repo-path default here once dangled after the
+        # src-layout move (2026-11). It must stay out of DEFAULT_PATHS.
+        assert "acquisition_interface" not in paths.DEFAULT_PATHS
+        assert paths.default_path("acquisition_interface", repo=fake_repo) is None
 
     def test_absolute_default_needs_no_repo(self) -> None:
         assert paths.default_path("socket_dir") == Path("/tmp")

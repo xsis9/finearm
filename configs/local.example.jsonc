@@ -13,7 +13,8 @@
     "stats_path": null,
 
     // Acquisition RobotInterface module for RL stage 2
-    // (default: <repo>/infer/robot_interface.py; env: PANTHERA_ACQ_IFACE)
+    // (default: the finearm.infer.robot_interface package module; a path
+    //  here or PANTHERA_ACQ_IFACE loads a custom file instead)
     "acquisition_interface": null,
 
     // Panthera vendor SDK root (default: <repo>/arm/panthera/sdk)

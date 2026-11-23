@@ -3,7 +3,7 @@
 An arm plugin package declares ``ARM_ID``, ``PROFILE`` (:class:`ArmProfile`),
 ``GAINS`` (:class:`~finearm.arms.daemon.ControlGains`), and the adapter
 factories ``make_pair`` / ``make_follower_only`` / ``make_mock_pair``
-(REFACTOR_PLAN.md §3a). Discovery is a directory scan (no entry points, no
+(the archived refactor plan (git history) §3a). Discovery is a directory scan (no entry points, no
 installation required) — drop a directory in and it is available.
 """
 

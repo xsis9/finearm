@@ -1,4 +1,4 @@
-"""WindowReceipt / BoundaryCollector — the core Stage-2 seam (REFACTOR_PLAN
+"""WindowReceipt / BoundaryCollector — the core Stage-2 seam (the archived refactor plan, git history
 §五 5b).
 
 The episode loop OWNS execution; WHAT becomes a replay transition is the

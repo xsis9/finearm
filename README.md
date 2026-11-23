@@ -42,10 +42,10 @@ highest first:
    (copy from [`configs/local.example.jsonc`](configs/local.example.jsonc))
 
 Layer 4 (lowest) is repo-relative defaults resolved by `finearm.core.paths`:
-`data/datasets` (dataset hub), `arm/panthera/sdk` (vendor SDK),
-`finearm/infer/robot_interface` (acquisition backend), `/tmp` (daemon socket
-dir). `FINEARM_ROOT` points at a checkout from an environment where the
-package is installed elsewhere.
+`data/datasets` (dataset hub), `arm/panthera/sdk` (vendor SDK), `/tmp`
+(daemon socket dir); the acquisition backend defaults to the
+`finearm.infer.robot_interface` package module. `FINEARM_ROOT` points at a
+checkout from an environment where the package is installed elsewhere.
 
 ### Topologies
 

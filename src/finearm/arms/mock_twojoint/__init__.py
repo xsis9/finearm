@@ -3,7 +3,7 @@
 A complete arm plugin with zero hardware: 2 joints + gripper → 6-dim state /
 3-dim action. It exists to prove that adding one directory under
 ``finearm/arms/`` is enough for the daemon, IPC, and clients to pick up a new
-arm with different dimensions (REFACTOR_PLAN.md §10.4) — no other code
+arm with different dimensions (the archived refactor plan (git history) §10.4) — no other code
 changes. Use it as the skeleton for a real new arm: replace the mock
 factories with a real adapter (see ``finearm/arms/panthera/adapter.py``).
 """

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ── Panthera 双相机状态恢复 + 读回验证(采集 & 推理共用,唯一事实来源)──
-# 本脚本位于 deploy/utils/,是采集(deploy/data/collect/panthera-lerobot-collect)
-# 与推理(deploy/infer)共用的唯一权威副本——相机档案变更只改这里。
+# 本脚本位于仓库根 utils/,是采集(plugins/panthera-lerobot-collect)
+# 与推理(src/finearm/infer/robot_interface.py)共用的唯一权威副本——相机档案变更只改这里。
 # 目标状态 = 采集 bolt_test2(2026-11-07 14:48,参考数据集)时两台相机的
 # 确切参数。run_panthera_lerobot_collect.sh(采集)与
-# deploy/infer/robot_interface.py(推理)启动时会自动调用本脚本:
+# src/finearm/infer/robot_interface.py(推理)启动时会自动调用本脚本:
 # 逐项设置、逐项读回验证,任一不匹配自动重试一次,仍失败则退出非 0。
 #
 # 用法:

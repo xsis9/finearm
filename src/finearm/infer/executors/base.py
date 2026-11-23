@@ -1,7 +1,7 @@
 """ChunkExecutor base: the executor contract + shared action math.
 
 The align/clamp/blend helpers are module-level so ``finearm.rl.loop`` can
-reuse them in Phase 5 (REFACTOR_PLAN.md §4). Executors differ only in HOW
+reuse them in Phase 5 (the archived refactor plan (git history) §4). Executors differ only in HOW
 they interleave observation, inference, and execution — safety clamping is
 identical everywhere and lives only here.
 """

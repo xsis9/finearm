@@ -33,9 +33,9 @@ VLA 微调框架:遥操作数据采集、微调、推理、以及强化学习后
    (从 [`configs/local.example.jsonc`](configs/local.example.jsonc) 复制)
 
 第 4 层(最低)是 `finearm.core.paths` 解析的仓库相对默认值:
-`data/datasets`(数据集枢纽)、`arm/panthera/sdk`(厂商 SDK)、
-`finearm/infer/robot_interface`(采集后端)、`/tmp`(daemon socket 目录)。
-包安装在他处时,`FINEARM_ROOT` 指向某个检出。
+`data/datasets`(数据集枢纽)、`arm/panthera/sdk`(厂商 SDK)、`/tmp`
+(daemon socket 目录);采集后端默认为 `finearm.infer.robot_interface`
+包模块。包安装在他处时,`FINEARM_ROOT` 指向某个检出。
 
 ### 拓扑
 

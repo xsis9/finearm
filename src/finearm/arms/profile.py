@@ -3,7 +3,7 @@
 Before Phase 2 the 14-dim state / 7-dim action schema was hardcoded in four
 places (constants, IPC validation, both LeRobot plugins, collect resume
 validation). Every consumer now derives its dimensions and feature names from
-one ArmProfile declaration per arm (REFACTOR_PLAN.md §3a).
+one ArmProfile declaration per arm (the archived refactor plan (git history) §3a).
 
 Snapshot layout convention (asserted in :class:`ArmProfile`):
 
