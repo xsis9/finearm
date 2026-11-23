@@ -4,7 +4,7 @@ Observe → blocking inference → execute ``n_action_steps`` steps → repeat.
 No pipelining: every executed step belongs to a chunk inferred from an
 observation taken at the window start, which makes the reference maximally
 fresh at the cost of one RTT stall per window. Intended for the actor
-segment of the hybrid deployment mode (infer/README.md) and for debugging.
+segment of the hybrid deployment mode (envs/infer/README.md) and for debugging.
 """
 
 from __future__ import annotations

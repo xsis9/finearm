@@ -1,6 +1,6 @@
 """Model adapter registry + shared tools (loaded by name from the CLI / bench).
 
-Adapter contract (read before writing a new one, see infer/README.md):
+Adapter contract (read before writing a new one, see envs/infer/README.md):
 
   NAME          adapter name (= filename; selected via --model)
   DEFAULT_PORT  default inference-server port
@@ -60,7 +60,7 @@ def load(name, host, port=None):
     if name not in available():
         raise SystemExit(
             f"未知适配器 {name!r};可用: {', '.join(available())}"
-            f"(在 finearm/infer/adapters/ 目录下,新增适配器见 infer/README.md)"
+            f"(在 finearm/infer/adapters/ 目录下,新增适配器见 envs/infer/README.md)"
         )
     mod = importlib.import_module(f"{__package__}.{name}")
     return mod.Adapter(host=host, port=port)

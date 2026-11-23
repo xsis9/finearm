@@ -9,8 +9,8 @@
 ## 环境搭建(执行机,一次性)
 
 ```bash
-./infer/init_env.sh                                  # 建 openpi-client 环境(或复用现有)
-infer/.venv/bin/pip install -e . --no-deps           # 装 finearm 命令行入口
+./envs/infer/init_env.sh                                  # 建 openpi-client 环境(或复用现有)
+envs/infer/.venv/bin/pip install -e . --no-deps           # 装 finearm 命令行入口
 ```
 
 ## 三方分工
@@ -54,7 +54,7 @@ lingbot 核对清单:checkpoint 必须是含 training config 的 `hf_ckpt` 目�
 ### 推理(执行机)—— 安全阶梯
 
 ```bash
-cd <finearm 仓库根> && source infer/.venv/bin/activate
+cd <finearm 仓库根> && source envs/infer/.venv/bin/activate
 
 # 一级 · 无硬件(mock 适配器,无服务):
 finearm-infer --model mock --host 127.0.0.1 --exec-mode rtc --mock --max-steps 300

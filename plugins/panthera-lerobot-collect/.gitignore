@@ -7,10 +7,9 @@
 *.egg-info/
 
 # Local environment files.
+# (venvs live under envs/<domain>/ at the repo root — see root .gitignore's
+#  .venv*/ glob; nothing venv-ish is created inside the plugin anymore)
 .env
-.venv/
-venv/
-/.venv-lerobot/
 .panthera_camera_selection.json
 
 # 本地运行产物。

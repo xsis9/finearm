@@ -4,19 +4,19 @@
 
 本机机械臂资产目录。daemon **代码**在 `src/finearm/arms/`(规范入口
 `finearm-daemon --arm panthera_ht`;本目录的 `run_daemon.sh` 直接驱动它)。
-本目录是厂商 SDK、本机标定与驱动环境的权威位置。
+本目录是厂商 SDK 与本机标定的权威位置;驱动**环境**在 `envs/arm/`
+(仓库规则:所有 venv 一律在 `envs/` 下)。
 
 | 路径 | 用途 |
 |---|---|
-| `init_env.sh` | 一次性驱动环境:在本目录建 `.venv`(python 3.12 + SDK 轮子 + SDK 依赖:pyyaml/scipy/pinocchio) |
-| `run_daemon.sh` | daemon 启动器(`--live/--mock/--hz` + daemon 参数透传);优先用本目录 `.venv`,缺失时回落采集 venv |
+| `run_daemon.sh` | daemon 启动器(`--live/--mock/--hz` + daemon 参数透传);优先用 `envs/arm/.venv`,缺失时回落采集 venv |
 | `sdk/Panthera-HT_SDK/` | 厂商 SDK 实体(gitignored;由采集工具的 `init_workspace.sh` 克隆/校验) |
 | `robot_param/` | **本机标定**(Leader/Follower.yaml + motor_param) |
 
 ## 首次搭建
 
 ```bash
-./arm/panthera/init_env.sh          # 驱动 venv(缺失时 daemon 回落到采集 venv)
+./envs/arm/init_env.sh              # 驱动 venv(缺失时 daemon 回落到采集 venv)
 ```
 
 ## daemon 生命周期
@@ -63,9 +63,3 @@ client.hold()
 - 仓库根的 `configs/arms/panthera_ht/` 提供可选覆盖 YAML——解析顺序:
   CLI `--leader-config/--follower-config` > `configs/arms/panthera_ht/*.yaml`
   > SDK 树副本。
-
-## 已知坑
-
-- **主臂读数 999 / 无数据**——标定选错:显式传
-  `--leader-config/--follower-config`。
-- **从臂断电** → SDK 重连循环中止(exit 134):恢复供电后重启 daemon。

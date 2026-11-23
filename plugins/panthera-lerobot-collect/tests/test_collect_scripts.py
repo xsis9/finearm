@@ -43,8 +43,7 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn("--socket", text)
         self.assertIn("finearm.data.cli", text)
         self.assertIn("PANTHERA_PYTHON", text)
-        self.assertIn(".venv/bin/python", text)
-        self.assertIn(".venv-lerobot/bin/python", text)
+        self.assertIn("envs/collect/.venv-lerobot/bin/python", text)
         self.assertIn("PYTHONNOUSERSITE=1", text)
         self.assertIn('PYTHONPATH="${REPO_ROOT}/src"', text)
         self.assertIn("lerobot-record", cli_text)
@@ -132,7 +131,7 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn("--mock", result.stderr)
 
     def test_lerobot_requirements_leave_local_panthera_wheel_to_bootstrap(self):
-        text = (ROOT / "requirements-lerobot.txt").read_text().lower()
+        text = (REPO / "envs" / "collect" / "requirements-lerobot.txt").read_text().lower()
 
         self.assertRegex(text, r"(^|\n)lerobot==0\.5\.1($|\n)")
         self.assertIn("init_workspace.sh", text)
@@ -155,12 +154,12 @@ class CollectScriptsTests(unittest.TestCase):
         # 本插件位于 <repo>/plugins/panthera-lerobot-collect,仓库根 = 上两级
         # (PLUGIN_ROOT→REPO_ROOT 两级推导);数据集默认落 <repo>/data/datasets;
         # SDK/标定属机械臂资产,统一在 <repo>/arm/panthera 下。
-        # venv 固定为本插件内 .venv-lerobot(Phase 2 起迁 envs/collect/)。
+        # venv 固定在 envs/collect/.venv-lerobot(仓库规则:venv 一律在 envs/ 下)。
         self.assertIn('PLUGIN_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"', script_text)
         self.assertIn('REPO_ROOT="$(dirname "$(dirname -- "${PLUGIN_ROOT}")")"', script_text)
         self.assertIn('PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${REPO_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"', script_text)
         self.assertIn('PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${REPO_ROOT}/data/datasets}"', script_text)
-        self.assertIn('PANTHERA_PYTHON="${PANTHERA_PYTHON:-${PLUGIN_ROOT}/.venv-lerobot/bin/python}"', script_text)
+        self.assertIn('PANTHERA_PYTHON="${PANTHERA_PYTHON:-${REPO_ROOT}/envs/collect/.venv-lerobot/bin/python}"', script_text)
 
         self.assertTrue(script.stat().st_mode & 0o111)
         self.assertIn("7f704d90cd3187327a587e9a5c355a2e1f95f987", script_text)
@@ -208,7 +207,9 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn('cam_lock="${PANTHERA_CAM_LOCK:-${REPO_ROOT}/utils/lock_cameras.sh}"', text)
         # daemon(arm/panthera)的 SDK 默认同指 arm/panthera/sdk
         self.assertIn('PANTHERA_SDK_ROOT:-${ARM_ROOT}/sdk/Panthera-HT_SDK', daemon_text)
-        # venv 只认本插件/驱动域内 venv,不回退外部环境。
+        # venv 只认 envs/ 下的仓库环境(envs/arm、envs/collect),不回退外部环境。
+        self.assertIn('envs/arm/.venv/bin/python', daemon_text)
+        self.assertIn('envs/collect/.venv-lerobot/bin/python', daemon_text)
         self.assertNotIn("envs/lerobot", text)
         self.assertNotIn("envs/lerobot", daemon_text)
 

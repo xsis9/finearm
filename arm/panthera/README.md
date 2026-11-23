@@ -5,19 +5,19 @@
 Per-machine arm assets. The daemon CODE lives in `src/finearm/arms/`
 (canonical entry `finearm-daemon --arm panthera_ht`; `run_daemon.sh` here
 drives it directly). This directory is the authoritative home for the
-vendor SDK, per-machine calibration, and the driver environment.
+vendor SDK and per-machine calibration; the driver ENVIRONMENT lives in
+`envs/arm/` (repo rule: all venvs under `envs/`).
 
 | Path | Purpose |
 |---|---|
-| `init_env.sh` | One-time driver env: creates `.venv` here (python 3.12 + SDK wheel + SDK deps: pyyaml/scipy/pinocchio) |
-| `run_daemon.sh` | Daemon launcher (`--live/--mock/--hz` + passthrough daemon flags); prefers this dir's `.venv`, falls back to the collect venv |
+| `run_daemon.sh` | Daemon launcher (`--live/--mock/--hz` + passthrough daemon flags); prefers `envs/arm/.venv`, falls back to the collect venv |
 | `sdk/Panthera-HT_SDK/` | Vendor SDK tree (gitignored; cloned/verified by the collect tool's `init_workspace.sh`) |
 | `robot_param/` | **Per-machine calibration** (Leader/Follower.yaml + motor_param) |
 
 ## First-time setup
 
 ```bash
-./arm/panthera/init_env.sh          # driver venv (falls back to the collect venv if absent)
+./envs/arm/init_env.sh              # driver venv (falls back to the collect venv if absent)
 ```
 
 ## Daemon lifecycle

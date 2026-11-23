@@ -10,8 +10,8 @@ backend (`finearm.infer.robot_interface`: daemon IPC + cameras).
 ## Setup (executor box, one-time)
 
 ```bash
-./infer/init_env.sh                                  # env with openpi-client (or reuse an existing one)
-infer/.venv/bin/pip install -e . --no-deps           # finearm console entries
+./envs/infer/init_env.sh                                  # env with openpi-client (or reuse an existing one)
+envs/infer/.venv/bin/pip install -e . --no-deps           # finearm console entries
 ```
 
 ## The three parties
@@ -56,7 +56,7 @@ must be present and norm-stats must be the same file used in training.
 ### Infer (executor box) — safety ladder
 
 ```bash
-cd <finearm repo root> && source infer/.venv/bin/activate
+cd <finearm repo root> && source envs/infer/.venv/bin/activate
 
 # level 1 · no hardware (mock adapter, no server):
 finearm-infer --model mock --host 127.0.0.1 --exec-mode rtc --mock --max-steps 300

@@ -22,10 +22,10 @@ data/
 ./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --check     # 校验
 
 # daemon 驱动环境(见 arm/panthera/README_zh.md):
-./arm/panthera/init_env.sh
+./envs/arm/init_env.sh
 
 # 采集环境装 finearm 命令行入口(一次性):
-plugins/panthera-lerobot-collect/.venv-lerobot/bin/pip install -e . --no-deps
+envs/collect/.venv-lerobot/bin/pip install -e . --no-deps
 ```
 
 ## 采集(主从臂 teleop)
@@ -33,7 +33,7 @@ plugins/panthera-lerobot-collect/.venv-lerobot/bin/pip install -e . --no-deps
 ```bash
 bash utils/lock_cameras.sh        # 每批次第一步:相机参数必须与训练/推理一致
 
-source plugins/panthera-lerobot-collect/.venv-lerobot/bin/activate
+source envs/collect/.venv-lerobot/bin/activate
 # (预检要求 lerobot-record 在 PATH 上——必须激活采集 venv)
 
 finearm-collect --method teleop --live \

@@ -37,10 +37,10 @@ if [[ -n "${PANTHERA_PYTHON:-}" ]]; then
   fi
   PYTHON="${PANTHERA_PYTHON}"
 else
-  # 只认本工具自己的 venv(init_workspace.sh --install 创建),不回退外部环境。
+  # 只认仓库 envs/collect 的采集 venv(init_workspace.sh --install 创建),
+  # 不回退外部环境(仓库规则:所有 venv 一律在 envs/<域>/ 下)。
   candidates=(
-    "${ROOT_DIR}/.venv-lerobot/bin/python"
-    "${ROOT_DIR}/.venv/bin/python"
+    "${REPO_ROOT}/envs/collect/.venv-lerobot/bin/python"
   )
   PYTHON=""
   for candidate in "${candidates[@]}"; do
@@ -50,8 +50,8 @@ else
     fi
   done
   if [[ -z "${PYTHON}" ]]; then
-    echo "error: 未找到本工具的采集环境(需 python + lerobot-record + lerobot==${SUPPORTED_LEROBOT_VERSION})" >&2
-    echo "hint: 先运行 ./scripts/init_workspace.sh --install 创建 ${ROOT_DIR}/.venv-lerobot" >&2
+    echo "error: 未找到采集环境(需 python + lerobot-record + lerobot==${SUPPORTED_LEROBOT_VERSION})" >&2
+    echo "hint: 先运行 ${REPO_ROOT}/plugins/panthera-lerobot-collect/scripts/init_workspace.sh --install 创建 ${REPO_ROOT}/envs/collect/.venv-lerobot" >&2
     exit 2
   fi
 fi

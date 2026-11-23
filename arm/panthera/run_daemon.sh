@@ -19,16 +19,14 @@ if [[ -n "${PANTHERA_PYTHON:-}" ]]; then
     exit 2
   fi
   PYTHON="${PANTHERA_PYTHON}"
-elif [[ -x "${ARM_ROOT}/.venv/bin/python" ]]; then
-  PYTHON="${ARM_ROOT}/.venv/bin/python"
-elif [[ -x "${COLLECT_TOOL}/.venv-lerobot/bin/python" ]]; then
-  PYTHON="${COLLECT_TOOL}/.venv-lerobot/bin/python"
-elif [[ -x "${COLLECT_TOOL}/.venv/bin/python" ]]; then
-  PYTHON="${COLLECT_TOOL}/.venv/bin/python"
+elif [[ -x "${REPO_ROOT}/envs/arm/.venv/bin/python" ]]; then
+  PYTHON="${REPO_ROOT}/envs/arm/.venv/bin/python"
+elif [[ -x "${REPO_ROOT}/envs/collect/.venv-lerobot/bin/python" ]]; then
+  PYTHON="${REPO_ROOT}/envs/collect/.venv-lerobot/bin/python"
 else
   echo "error: 未找到可用的 python 环境" >&2
   echo "hint: 先运行 ${COLLECT_TOOL}/scripts/init_workspace.sh --install 创建采集环境" >&2
-  echo "      (或建 ${ARM_ROOT}/.venv —— daemon 本体只依赖 SDK 轮子)" >&2
+  echo "      (或 ${REPO_ROOT}/envs/arm/init_env.sh 建驱动环境 —— daemon 本体只依赖 SDK 轮子)" >&2
   exit 2
 fi
 

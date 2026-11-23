@@ -3,7 +3,6 @@
 /data/logs/
 /RL/rlt_panthera/checkpoints/
 /RL/rlt_panthera/data/
-/envs/
 /.panthera_camera_selection.json
 /configs/local.jsonc
 

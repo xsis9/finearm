@@ -15,9 +15,9 @@ one plugin directory, nothing else changes.
 
 | Path | Contents |
 |---|---|
-| `arm/panthera/` | Per-machine arm assets: vendor SDK (gitignored), calibration (`robot_param/`), driver env (`init_env.sh`), daemon launcher (`run_daemon.sh`) |
+| `arm/panthera/` | Per-machine arm assets: vendor SDK (gitignored), calibration (`robot_param/`), daemon launcher (`run_daemon.sh`; driver env in `envs/arm/`) |
 | `plugins/panthera-lerobot-collect/` | LeRobot collection stack: robot/teleoperator plugins, launcher wrapper, operator docs |
-| `infer/` | Inference environment (openpi-client venv) |
+| `envs/` | All environment definitions + venvs: `infer/` (openpi-client), `collect/` (LeRobot 0.5.1), `arm/` (driver) |
 | `RL/rlt_panthera/` | RL run artifacts: campaign checkpoints/data (gitignored) and the stage-2 config; the code lives in `src/finearm/rl/` |
 | `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
 | `src/finearm/arms/` | Arm plugins: `ArmProfile` schema declaration + arm-neutral control daemon (`finearm-daemon --arm <id>`); `panthera_ht` (real) and `mock_twojoint` (extensibility demo) |
@@ -119,7 +119,7 @@ to stop it, kill the **python** PID (not the bash wrapper).
 ```bash
 bash utils/lock_cameras.sh        # FIRST, always: camera params must match training/inference
 
-source plugins/panthera-lerobot-collect/.venv-lerobot/bin/activate
+source envs/collect/.venv-lerobot/bin/activate
 # (preflight requires lerobot-record on PATH — activate the collect venv or
 #  prepend its bin/ dir; invoking the console entry by absolute path alone
 #  is not enough)
@@ -208,7 +208,7 @@ uv run scripts/serve_policy.py \
 ```
 
 Start the policy server on the GPU box (quickstart above; per-model details:
-[`infer/README.md`](infer/README.md) — pi05 port 8000, lingbot 8006), then
+[`envs/infer/README.md`](envs/infer/README.md) — pi05 port 8000, lingbot 8006), then
 from the executor box forward the port and keep `--host 127.0.0.1`:
 
 ```bash
@@ -222,7 +222,7 @@ repo root, in the **infer environment** (openpi-client + the finearm console
 entries — same one-time `pip install -e . --no-deps` as the setup above):
 
 ```bash
-source infer/.venv/bin/activate     # not installed yet → infer/.venv/bin/pip install -e . --no-deps
+source envs/infer/.venv/bin/activate     # not installed yet → envs/infer/.venv/bin/pip install -e . --no-deps
 
 # level 1 · no hardware, full client stack (mock adapter, no server):
 finearm-infer --model mock --host 127.0.0.1 --exec-mode rtc --mock --max-steps 300

@@ -12,7 +12,7 @@ REPO_ROOT="$(dirname "$(dirname -- "${PLUGIN_ROOT}")")"
 PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${REPO_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"
 PANTHERA_SDK_URL="${PANTHERA_SDK_URL:-https://github.com/HighTorque-Robotics/Panthera-HT_SDK.git}"
 PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${REPO_ROOT}/data/datasets}"
-PANTHERA_PYTHON="${PANTHERA_PYTHON:-${PLUGIN_ROOT}/.venv-lerobot/bin/python}"
+PANTHERA_PYTHON="${PANTHERA_PYTHON:-${REPO_ROOT}/envs/collect/.venv-lerobot/bin/python}"
 
 mode="check"
 case "${1:-}" in
@@ -88,6 +88,6 @@ if [[ ! -x "${PANTHERA_PYTHON}" ]]; then
 fi
 
 "${PANTHERA_PYTHON}" -m pip install --upgrade pip
-"${PANTHERA_PYTHON}" -m pip install -r "${PLUGIN_ROOT}/requirements-lerobot.txt"
+"${PANTHERA_PYTHON}" -m pip install -r "${REPO_ROOT}/envs/collect/requirements-lerobot.txt"
 "${PANTHERA_PYTHON}" -m pip install "${wheel}"
 echo "workspace initialization complete"

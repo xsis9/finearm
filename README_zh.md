@@ -8,9 +8,9 @@ VLA 微调框架:遥操作数据采集、微调、推理、以及强化学习后
 
 | 路径 | 内容 |
 |---|---|
-| `arm/panthera/` | 验证过的机械臂资产:厂商 SDK(gitignored)、标定(`robot_param/`)、驱动环境(`init_env.sh`)、daemon 启动器(`run_daemon.sh`) |
+| `arm/panthera/` | 验证过的机械臂资产:厂商 SDK(gitignored)、标定(`robot_param/`)、daemon 启动器(`run_daemon.sh`;驱动环境在 `envs/arm/`) |
 | `plugins/panthera-lerobot-collect/` | LeRobot 采集栈:robot/teleoperator 插件、启动 wrapper、操作文档 |
-| `infer/` | 推理环境(openpi-client venv) |
+| `envs/` | 全部环境定义与 venv:`infer/`(openpi-client)、`collect/`(LeRobot 0.5.1)、`arm/`(驱动) |
 | `RL/rlt_panthera/` | RL 运行产物:campaign checkpoints/data(gitignored)与 stage-2 配置;代码在 `src/finearm/rl/` |
 | `src/finearm/core/` | 零依赖核心:四层配置解析、仓库路径、插件注册表、norm-stats 契约 |
 | `src/finearm/arms/` | 臂插件:`ArmProfile` schema 声明 + 臂中立控制 daemon(`finearm-daemon --arm <id>`);`panthera_ht`(真臂)与 `mock_twojoint`(扩展性示例) |
@@ -102,7 +102,7 @@ bash arm/panthera/run_daemon.sh --live \
 ```bash
 bash utils/lock_cameras.sh        # 永远第一步:相机参数必须与训练/推理一致
 
-source plugins/panthera-lerobot-collect/.venv-lerobot/bin/activate
+source envs/collect/.venv-lerobot/bin/activate
 # (预检要求 lerobot-record 在 PATH 上——先激活采集 venv,或把它的 bin/
 #  目录前插到 PATH;只靠绝对路径调命令行入口是不够的)
 
@@ -185,7 +185,7 @@ uv run scripts/serve_policy.py \
 ```
 
 在 GPU 机上起策略服务(快速上手见上;各模型细节:
-[`infer/README.md`](infer/README.md)——pi05 端口 8000,lingbot 8006),
+[`envs/infer/README.md`](envs/infer/README.md)——pi05 端口 8000,lingbot 8006),
 然后在执行机转发端口并保持 `--host 127.0.0.1`:
 
 ```bash
@@ -198,7 +198,7 @@ ssh -N -L 8000:127.0.0.1:8000 <user>@<gpu-host>
 (openpi-client + finearm 命令行入口——即上面一次性准备里装过的那个):
 
 ```bash
-source infer/.venv/bin/activate     # 还没装 → infer/.venv/bin/pip install -e . --no-deps
+source envs/infer/.venv/bin/activate     # 还没装 → envs/infer/.venv/bin/pip install -e . --no-deps
 
 # 一级 · 无硬件,全客户端栈(mock 适配器,无服务):
 finearm-infer --model mock --host 127.0.0.1 --exec-mode rtc --mock --max-steps 300

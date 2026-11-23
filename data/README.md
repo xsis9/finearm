@@ -24,10 +24,10 @@ data/
 ./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --check     # verify
 
 # driver env for the daemon (see arm/panthera/README.md):
-./arm/panthera/init_env.sh
+./envs/arm/init_env.sh
 
 # finearm console entries into the collect env (one-time):
-plugins/panthera-lerobot-collect/.venv-lerobot/bin/pip install -e . --no-deps
+envs/collect/.venv-lerobot/bin/pip install -e . --no-deps
 ```
 
 ## Collecting (leader-follower teleop)
@@ -35,7 +35,7 @@ plugins/panthera-lerobot-collect/.venv-lerobot/bin/pip install -e . --no-deps
 ```bash
 bash utils/lock_cameras.sh        # FIRST, every batch: camera params must match training/inference
 
-source plugins/panthera-lerobot-collect/.venv-lerobot/bin/activate
+source envs/collect/.venv-lerobot/bin/activate
 # (preflight requires lerobot-record on PATH — the venv must be activated)
 
 finearm-collect --method teleop --live \
