@@ -4,17 +4,15 @@ set -euo pipefail
 readonly SDK_REVISION="7f704d90cd3187327a587e9a5c355a2e1f95f987"
 readonly WHEEL_PATTERN="hightorque_robot-*-cp312-cp312-linux_x86_64.whl"
 
-REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-# 数据域根 = <deploy>/data(本工具位于 <deploy>/data/collect/panthera-lerobot-collect)。
-# 数据集/日志/本机标定配置落在数据域内,与 deploy 其他目录及旧项目
-# ~/panthera、project-Embodied_AGV 完全隔离;各变量可被环境变量覆盖。
-# SDK 属机械臂资产,统一放 <deploy>/arm/panthera/sdk;克隆与 revision 锁定仍由本脚本负责。
-DATA_ROOT="$(dirname "$(dirname -- "${REPO_ROOT}")")"
-DEPLOY_ROOT="$(dirname -- "${DATA_ROOT}")"
-PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${DEPLOY_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"
+PLUGIN_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+# 本插件位于 <repo>/plugins/panthera-lerobot-collect → 仓库根 = 上两级。
+# 数据集/日志落 <repo>/data(运行产物域);SDK 属机械臂资产,统一放
+# <repo>/arm/panthera/sdk,克隆与 revision 锁定仍由本脚本负责;各变量可被环境变量覆盖。
+REPO_ROOT="$(dirname "$(dirname -- "${PLUGIN_ROOT}")")"
+PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${REPO_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"
 PANTHERA_SDK_URL="${PANTHERA_SDK_URL:-https://github.com/HighTorque-Robotics/Panthera-HT_SDK.git}"
-PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${DATA_ROOT}/datasets}"
-PANTHERA_PYTHON="${PANTHERA_PYTHON:-${REPO_ROOT}/.venv-lerobot/bin/python}"
+PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${REPO_ROOT}/data/datasets}"
+PANTHERA_PYTHON="${PANTHERA_PYTHON:-${PLUGIN_ROOT}/.venv-lerobot/bin/python}"
 
 mode="check"
 case "${1:-}" in
@@ -71,7 +69,7 @@ if [[ "${#wheels[@]}" -ne 1 ]]; then
 fi
 wheel="${wheels[0]}"
 
-echo "data root: ${DATA_ROOT}"
+echo "data root: ${REPO_ROOT}/data"
 echo "sdk: ${PANTHERA_SDK_ROOT} (${SDK_REVISION})"
 echo "wheel: ${wheel}"
 echo "python: ${PANTHERA_PYTHON}"
@@ -82,7 +80,7 @@ fi
 
 mkdir -p \
   "${PANTHERA_DATA_ROOT}/lerobot" \
-  "${DATA_ROOT}/logs/daemon" "${DATA_ROOT}/logs/diagnostics" \
+  "${REPO_ROOT}/data/logs/daemon" "${REPO_ROOT}/data/logs/diagnostics" \
   "$(dirname -- "${PANTHERA_PYTHON}")"
 
 if [[ ! -x "${PANTHERA_PYTHON}" ]]; then
@@ -90,6 +88,6 @@ if [[ ! -x "${PANTHERA_PYTHON}" ]]; then
 fi
 
 "${PANTHERA_PYTHON}" -m pip install --upgrade pip
-"${PANTHERA_PYTHON}" -m pip install -r "${REPO_ROOT}/requirements-lerobot.txt"
+"${PANTHERA_PYTHON}" -m pip install -r "${PLUGIN_ROOT}/requirements-lerobot.txt"
 "${PANTHERA_PYTHON}" -m pip install "${wheel}"
 echo "workspace initialization complete"

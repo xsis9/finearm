@@ -40,7 +40,7 @@ export WRIST_CAMERA=/dev/v4l/by-id/usb-4K_USB_CAMERA_HD_USB_CAMERA_01.00.00-vide
 首次采集不要传 `--dataset-root`，wrapper 会创建唯一 timestamp root：
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 
 set -a
 source .env
@@ -161,7 +161,6 @@ lerobot_teleoperator_panthera_ht/
 
 quest_bridge.py       # Quest3S 遥操作桥(第三种采集方式,见 quest2ros_setup.md)
 run_panthera_lerobot_collect.sh
-run_panthera_lerobot_daemon.sh
 scripts/
   init_workspace.sh   # SDK + venv + LeRobot 0.5.1 环境初始化
   lock_cameras.sh     # 双相机参数锁定/验证(与推理端共用同一档案)
@@ -188,7 +187,7 @@ teleop.type = panthera_ht_leader
 建议使用干净虚拟环境，避免 ROS、系统 Python、旧 recorder 环境和 LeRobot 环境互相污染。
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 ./scripts/init_workspace.sh --install
 ```
 
@@ -254,14 +253,13 @@ Mock 模式不连接机械臂，用来验证 daemon、IPC 和 LeRobot plugin 基
 Terminal A 启动 daemon：
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
-./run_panthera_lerobot_daemon.sh --mock --hz 1000
+bash arm/panthera/run_daemon.sh --mock --hz 1000    # 仓库根执行
 ```
 
 Terminal B 检查 status 和 snapshot：
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 python - <<'PY'
 from panthera_lerobot_control import ControlClient
 
@@ -313,7 +311,7 @@ PY
 正式采集使用前面的[正式采集快速开始](#正式采集快速开始)。需要更换或重新识别相机时，可用 GUI 交互选择：
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 ./run_panthera_lerobot_collect.sh --live \
   --select-cameras \
   --repo-id local/panthera_smolvla_demo \
@@ -407,8 +405,7 @@ cd deploy/data/collect/panthera-lerobot-collect
 Terminal A：
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
-./run_panthera_lerobot_daemon.sh --live --hz 1000
+bash arm/panthera/run_daemon.sh --live --hz 1000    # 仓库根执行
 ```
 
 `--live` 表示连接真实 Panthera 硬件。不写 `--live` 时 wrapper 默认加 `--mock`，避免误启动硬件。
@@ -430,7 +427,7 @@ cd deploy/data/collect/panthera-lerobot-collect
 示例：
 
 ```bash
-./run_panthera_lerobot_daemon.sh --live --hz 1000 \
+bash arm/panthera/run_daemon.sh --live --hz 1000 \
   --socket /tmp/panthera_lerobot_control.sock \
   --sdk-root ${PANTHERA_SDK_ROOT}/panthera_python
 ```
@@ -462,7 +459,7 @@ last_error: None
 Terminal B，在 daemon 已经运行后执行：
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 lerobot-record \
   --robot.type=panthera_ht_follower \
   --robot.id=panthera_follower \
@@ -548,7 +545,7 @@ lerobot-record \
 1. 不接 LeRobot，只启动 daemon：
 
    ```bash
-   ./run_panthera_lerobot_daemon.sh --live --hz 1000
+   bash arm/panthera/run_daemon.sh --live --hz 1000
    ```
 
    观察 2 分钟，确认主从臂控制稳定。
@@ -733,7 +730,7 @@ IPC `hold` 请求：
 
 ### Mock 验收
 
-- `./run_panthera_lerobot_daemon.sh --mock --hz 1000` 能启动。
+- `bash arm/panthera/run_daemon.sh --mock --hz 1000`(仓库根)能启动。
 - `ControlClient.status()` 返回 `mode=mock`、`running=True`。
 - `ControlClient.snapshot()` 返回 14 维 `observation.state` 和 7 维 `action`。
 - `PantheraHTRobot.get_observation()` 返回 14 个命名 key。
@@ -907,5 +904,5 @@ python3 -m py_compile \
 脚本检查：
 
 ```bash
-bash -n run_panthera_lerobot_daemon.sh
+bash -n arm/panthera/run_daemon.sh
 ```

@@ -6,14 +6,17 @@ import unittest
 import tempfile
 from pathlib import Path
 
+from repo_paths import repo_root
 
 ROOT = Path(__file__).resolve().parents[1]
+REPO = repo_root()
 
 
 class CollectScriptsTests(unittest.TestCase):
     def test_run_script_translates_friendly_live_and_hz_flags(self):
-        # daemon 启动脚本已迁至 deploy/arm/panthera/run_daemon.sh;旧路径保留转发 wrapper。
-        script = ROOT.parents[2] / "arm" / "panthera" / "run_daemon.sh"
+        # daemon 启动脚本(唯一入口)在 <repo>/arm/panthera/run_daemon.sh;
+        # 2026-11 目录重组后插件内不再保留转发 shim。
+        script = REPO / "arm" / "panthera" / "run_daemon.sh"
         text = script.read_text()
         self.assertTrue(script.stat().st_mode & 0o111, "daemon launcher should be executable")
 
@@ -24,16 +27,14 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn(".venv/bin/python", text)
         self.assertRegex(text, r"(^|\n)PYTHONPATH=\"?\"?", "script should clear ROS-injected PYTHONPATH")
 
-        legacy = ROOT / "run_panthera_lerobot_daemon.sh"
-        self.assertTrue(legacy.stat().st_mode & 0o111)
-        self.assertIn("arm/panthera/run_daemon.sh", legacy.read_text(),
-                      "legacy launcher should forward to deploy/arm")
+        self.assertFalse((ROOT / "run_panthera_lerobot_daemon.sh").exists(),
+                         "legacy forwarding shim should be gone — arm/panthera/run_daemon.sh is the only entry")
 
     def test_collect_script_runs_collect_cli_and_exposes_friendly_flags(self):
         script = ROOT / "run_panthera_lerobot_collect.sh"
         text = script.read_text()
         mode = script.stat().st_mode
-        cli_text = (ROOT.parents[2] / "src" / "finearm" / "data" / "collector" / "teleop.py").read_text()
+        cli_text = (REPO / "src" / "finearm" / "data" / "collector" / "teleop.py").read_text()
 
         self.assertTrue(mode & 0o111, "collect launcher should be executable")
         self.assertIn("--live", text)
@@ -45,7 +46,7 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn(".venv/bin/python", text)
         self.assertIn(".venv-lerobot/bin/python", text)
         self.assertIn("PYTHONNOUSERSITE=1", text)
-        self.assertIn('PYTHONPATH="${ROOT_DIR}/src"', text)
+        self.assertIn('PYTHONPATH="${REPO_ROOT}/src"', text)
         self.assertIn("lerobot-record", cli_text)
 
     def test_collect_script_rejects_python_without_sibling_lerobot_record(self):
@@ -151,14 +152,15 @@ class CollectScriptsTests(unittest.TestCase):
             "PANTHERA_PYTHON",
         ):
             self.assertIn(name, template)
-        # 数据域根 = <deploy>/data(工具位于其下 collect/panthera-lerobot-collect);
-        # 数据集默认落数据域内;SDK/标定属机械臂资产,统一在 <deploy>/arm/panthera 下。
-        # venv 固定为本工具内 .venv-lerobot。
-        self.assertIn('DATA_ROOT="$(dirname "$(dirname -- "${REPO_ROOT}")")"', script_text)
-        self.assertIn('DEPLOY_ROOT="$(dirname -- "${DATA_ROOT}")"', script_text)
-        self.assertIn('PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${DEPLOY_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"', script_text)
-        self.assertIn('PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${DATA_ROOT}/datasets}"', script_text)
-        self.assertIn('PANTHERA_PYTHON="${PANTHERA_PYTHON:-${REPO_ROOT}/.venv-lerobot/bin/python}"', script_text)
+        # 本插件位于 <repo>/plugins/panthera-lerobot-collect,仓库根 = 上两级
+        # (PLUGIN_ROOT→REPO_ROOT 两级推导);数据集默认落 <repo>/data/datasets;
+        # SDK/标定属机械臂资产,统一在 <repo>/arm/panthera 下。
+        # venv 固定为本插件内 .venv-lerobot(Phase 2 起迁 envs/collect/)。
+        self.assertIn('PLUGIN_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"', script_text)
+        self.assertIn('REPO_ROOT="$(dirname "$(dirname -- "${PLUGIN_ROOT}")")"', script_text)
+        self.assertIn('PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${REPO_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"', script_text)
+        self.assertIn('PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${REPO_ROOT}/data/datasets}"', script_text)
+        self.assertIn('PANTHERA_PYTHON="${PANTHERA_PYTHON:-${PLUGIN_ROOT}/.venv-lerobot/bin/python}"', script_text)
 
         self.assertTrue(script.stat().st_mode & 0o111)
         self.assertIn("7f704d90cd3187327a587e9a5c355a2e1f95f987", script_text)
@@ -174,7 +176,6 @@ class CollectScriptsTests(unittest.TestCase):
         # PANTHERA_ROOT(旧项目/旧工作区),保证 deploy 独立发布。
         for path in (
             ROOT / "run_panthera_lerobot_collect.sh",
-            ROOT / "run_panthera_lerobot_daemon.sh",
             ROOT / "scripts" / "init_workspace.sh",
             ROOT / "quest_bridge.py",
         ):
@@ -185,37 +186,37 @@ class CollectScriptsTests(unittest.TestCase):
             self.assertNotIn("panthera\" / \"data", text, f"{path.name} still references ~/panthera/data")
 
     def test_collect_cli_default_dataset_root_lands_in_data_hub(self):
-        # 未设 PANTHERA_DATA_ROOT 时,数据集默认落 <deploy>/data/datasets。
+        # 未设 PANTHERA_DATA_ROOT 时,数据集默认落 <repo>/data/datasets。
         sys.path.insert(0, str(ROOT))
         try:
             from finearm.data.collector.teleop import _default_data_root
-            expected = ROOT.parents[1] / "datasets"
+            expected = REPO / "data" / "datasets"
             self.assertEqual(_default_data_root(), expected)
         finally:
             sys.path.remove(str(ROOT))
 
     def test_collect_wrapper_exports_data_hub_defaults(self):
-        # wrapper 在未设置环境变量时,数据集默认指 <deploy>/data,
-        # SDK(机械臂资产)默认指 <deploy>/arm/panthera/sdk。
+        # wrapper 在未设置环境变量时,数据集默认指 <repo>/data/datasets,
+        # SDK(机械臂资产)默认指 <repo>/arm/panthera/sdk。
         script = ROOT / "run_panthera_lerobot_collect.sh"
         text = script.read_text()
-        daemon_text = (ROOT.parents[2] / "arm" / "panthera" / "run_daemon.sh").read_text()
+        daemon_text = (REPO / "arm" / "panthera" / "run_daemon.sh").read_text()
 
-        self.assertIn('DATA_ROOT="$(dirname "$(dirname "${ROOT_DIR}")")"', text)
-        self.assertIn('DEPLOY_ROOT="$(dirname -- "${DATA_ROOT}")"', text)
-        self.assertIn('export PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${DEPLOY_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"', text)
-        self.assertIn('export PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${DATA_ROOT}/datasets}"', text)
-        # daemon(deploy/arm)的 SDK 默认同指 <deploy>/arm/sdk
+        self.assertIn('REPO_ROOT="$(dirname "$(dirname -- "${ROOT_DIR}")")"', text)
+        self.assertIn('export PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${REPO_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"', text)
+        self.assertIn('export PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${REPO_ROOT}/data/datasets}"', text)
+        self.assertIn('cam_lock="${PANTHERA_CAM_LOCK:-${REPO_ROOT}/utils/lock_cameras.sh}"', text)
+        # daemon(arm/panthera)的 SDK 默认同指 arm/panthera/sdk
         self.assertIn('PANTHERA_SDK_ROOT:-${ARM_ROOT}/sdk/Panthera-HT_SDK', daemon_text)
-        # venv 只认本工具/驱动域内 venv,不回退外部环境。
+        # venv 只认本插件/驱动域内 venv,不回退外部环境。
         self.assertNotIn("envs/lerobot", text)
         self.assertNotIn("envs/lerobot", daemon_text)
 
-    def test_camera_lock_script_lives_in_deploy_utils_and_wrapper_calls_it(self):
-        # utils/lock_cameras.sh 是采集与推理共用的唯一权威副本;
+    def test_camera_lock_script_lives_in_utils_and_wrapper_calls_it(self):
+        # utils/lock_cameras.sh(仓库根)是采集与推理共用的唯一权威副本;
         # 本工具不再保留自己的副本(防漂移),wrapper 预检按 PANTHERA_CAM_LOCK/
         # utils/ 顺序调用。
-        script = ROOT.parents[2] / "utils" / "lock_cameras.sh"
+        script = REPO / "utils" / "lock_cameras.sh"
         text = script.read_text()
 
         self.assertTrue(script.stat().st_mode & 0o111)
@@ -229,18 +230,18 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertFalse((ROOT / "scripts" / "lock_cameras.sh").exists(),
                          "工具内不应再有 lock_cameras.sh 副本(权威副本在 utils/)")
         wrapper = (ROOT / "run_panthera_lerobot_collect.sh").read_text()
-        self.assertIn('PANTHERA_CAM_LOCK:-$(dirname "${DATA_ROOT}")/utils/lock_cameras.sh', wrapper)
+        self.assertIn('PANTHERA_CAM_LOCK:-${REPO_ROOT}/utils/lock_cameras.sh', wrapper)
 
     def test_readmes_direct_users_to_lock_cameras_first(self):
-        # 采集(数据域 README,2026-11-12 从工具根迁至 data/README.md)与推理的
-        # README 都必须写明:第一步先跑 utils/lock_cameras.sh(命令从仓库根执行)。
-        collect_readme = (ROOT.parents[1] / "README.md").read_text()
-        infer_root = ROOT.parents[2] / "infer"
+        # 采集(data/README.md)与推理(infer/README.md)的 README 都必须写明:
+        # 第一步先跑 utils/lock_cameras.sh(命令从仓库根执行)。
+        collect_readme = (REPO / "data" / "README.md").read_text()
+        infer_root = REPO / "infer"
         infer_readme_path = next(
             (p for p in (infer_root / "README.md", infer_root / "pi" / "README.md") if p.exists()),
             None,
         )
-        self.assertIsNotNone(infer_readme_path, "deploy/infer/ 下应有 README.md")
+        self.assertIsNotNone(infer_readme_path, "infer/ 下应有 README.md(Phase 2 起为 envs/infer/)")
         infer_readme = infer_readme_path.read_text()
 
         for name, text in (("collect", collect_readme), ("infer", infer_readme)):
@@ -300,7 +301,7 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn("./run_panthera_lerobot_collect.sh --live", text)
         self.assertIn("--select-cameras", text)
         self.assertIn("--print-command", text)
-        self.assertIn("./run_panthera_lerobot_daemon.sh --live --hz 1000", text)
+        self.assertIn("bash arm/panthera/run_daemon.sh --live --hz 1000", text)
         self.assertIn("1000 Hz", text)
         self.assertIn("teleoperation", text.lower())
         self.assertIn("policy inference", text.lower())
@@ -350,13 +351,15 @@ class CollectScriptsTests(unittest.TestCase):
         self.assertIn("--leader-config", text)
 
     def test_manual_uses_data_hub_paths_for_configs_and_datasets(self):
-        # 手册命令的相对路径一律 deploy 根锚定(arm/panthera/robot_param、data/datasets),
-        # 由 adapters 的项目路径解析器保证任意 CWD 可用;不再指 ~/panthera。
+        # 手册命令的相对路径一律仓库根锚定(arm/panthera/robot_param、data/datasets),
+        # 由 adapters 的项目路径解析器保证任意 CWD 可用;不再指 ~/panthera,
+        # 也不再残留 deploy/ 前缀(2026-11 目录重组)。
         text = (ROOT / "docs" / "quest2ros_setup.md").read_text()
 
         self.assertIn("--leader-config arm/panthera/robot_param/Leader.yaml", text)
         self.assertIn("--follower-config arm/panthera/robot_param/Follower.yaml", text)
-        self.assertIn("deploy/data/datasets/lerobot/", text)
+        self.assertIn("data/datasets/lerobot/", text)
+        self.assertNotIn("deploy/", text)
         self.assertNotIn("~/panthera/robot_param", text)
         self.assertNotIn("~/panthera/data", text)
 

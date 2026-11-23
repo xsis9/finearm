@@ -4,6 +4,7 @@
 /RL/rlt_panthera/checkpoints/
 /RL/rlt_panthera/data/
 /envs/
+/.panthera_camera_selection.json
 /configs/local.jsonc
 
 # ---- 第三方 vendored(refactor Phase 0 再从训练机同步 openpi 修改版正式入库) ----

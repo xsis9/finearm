@@ -39,11 +39,35 @@ except ImportError as exc:  # pragma: no cover - environment guard
     print(f"error: quest_bridge requires pinocchio, scipy, numpy, PyYAML: {exc}", file=sys.stderr)
     raise SystemExit(2)
 
-REPO_ROOT = Path(__file__).resolve().parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+PLUGIN_ROOT = Path(__file__).resolve().parent
+if str(PLUGIN_ROOT) not in sys.path:
+    sys.path.insert(0, str(PLUGIN_ROOT))
 
 from panthera_lerobot_control.ipc import ControlClient, ControlClientError  # noqa: E402
+
+
+def _find_repo_root() -> Path:
+    """Locate the finearm repo root above the plugin (marker: pyproject name).
+
+    Anchors repo-relative calibration paths (arm/panthera/robot_param/…) the
+    same way finearm.core.paths does — by marker, not by counting directory
+    levels, so relocating the plugin directory cannot silently re-anchor it.
+    """
+    import tomllib
+
+    for candidate in PLUGIN_ROOT.parents:
+        pyproject = candidate / "pyproject.toml"
+        if not pyproject.is_file():
+            continue
+        try:
+            with open(pyproject, "rb") as f:
+                if tomllib.load(f).get("project", {}).get("name") == "finearm":
+                    return candidate
+        except (OSError, tomllib.TOMLDecodeError):
+            continue
+    raise FileNotFoundError(
+        "finearm repo root not found above the plugin (expected a pyproject.toml with name = finearm)"
+    )
 
 DEFAULT_JOINT_COUNT = 6
 DEFAULT_GRIPPER_RANGE = (0.0, 1.6)
@@ -815,17 +839,17 @@ def _parse_joint_values(value) -> tuple[float, ...]:
 
 
 def _resolve_follower_config(args) -> Path:
-    deploy_root = REPO_ROOT.parents[2]
+    repo_root = _find_repo_root()
     if args.follower_config:
         p = Path(args.follower_config)
         if not p.is_absolute():
-            anchored = deploy_root / p
+            anchored = repo_root / p
             if anchored.exists():
                 return anchored
         return p
-    # 标定配置属 arm 域(<deploy>/arm/panthera/robot_param,serial_id 已按本机串口布局改对),
+    # 标定配置属 arm 域(<repo>/arm/panthera/robot_param,serial_id 已按本机串口布局改对),
     # 没有才退回 SDK 自带的出厂配置(serial_id 1/2,仅适配原验收工作站)。
-    panthera_root = deploy_root / "arm" / "panthera"
+    panthera_root = repo_root / "arm" / "panthera"
     local_config = panthera_root / "robot_param" / "Follower.yaml"
     if local_config.exists():
         return local_config

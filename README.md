@@ -16,7 +16,7 @@ one plugin directory, nothing else changes.
 | Path | Contents |
 |---|---|
 | `arm/panthera/` | Per-machine arm assets: vendor SDK (gitignored), calibration (`robot_param/`), driver env (`init_env.sh`), daemon launcher (`run_daemon.sh`) |
-| `data/collect/panthera-lerobot-collect/` | LeRobot collection stack: robot/teleoperator plugins, launcher wrapper, operator docs |
+| `plugins/panthera-lerobot-collect/` | LeRobot collection stack: robot/teleoperator plugins, launcher wrapper, operator docs |
 | `infer/` | Inference environment (openpi-client venv) |
 | `RL/rlt_panthera/` | RL run artifacts: campaign checkpoints/data (gitignored) and the stage-2 config; the code lives in `src/finearm/rl/` |
 | `src/finearm/core/` | Zero-dependency core: four-layer config resolution, repo paths, plugin registry, norm-stats contract |
@@ -119,7 +119,7 @@ to stop it, kill the **python** PID (not the bash wrapper).
 ```bash
 bash utils/lock_cameras.sh        # FIRST, always: camera params must match training/inference
 
-source data/collect/panthera-lerobot-collect/.venv-lerobot/bin/activate
+source plugins/panthera-lerobot-collect/.venv-lerobot/bin/activate
 # (preflight requires lerobot-record on PATH — activate the collect venv or
 #  prepend its bin/ dir; invoking the console entry by absolute path alone
 #  is not enough)
@@ -133,14 +133,14 @@ finearm-collect --method teleop --live \
     --episodes 1 --episode-seconds 30 --reset-seconds 60 \
     --fps 30 --hz 1000 --camera-fourcc MJPG
 # or the launcher wrapper (same flags, manages the venv for you):
-#   ./data/collect/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live …
+#   ./plugins/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live …
 ```
 
 Datasets land under `data/datasets/lerobot/<namespace>/<repo-id>/<timestamp>/`
 (override: `PANTHERA_DATA_ROOT`). Output is **LeRobot-native v3** — directly
 trainable, no conversion. The authoritative operator manual (three collection
 methods, parameter tables, batch SOP) is
-[`data/collect/panthera-lerobot-collect/docs/quest2ros_setup.md`](data/collect/panthera-lerobot-collect/docs/quest2ros_setup.md).
+[`plugins/panthera-lerobot-collect/docs/quest2ros_setup.md`](plugins/panthera-lerobot-collect/docs/quest2ros_setup.md).
 
 ### 3 · Fine-tune (external handoff)
 
@@ -290,7 +290,7 @@ python -m pytest tests/data/
 python -m pytest tests/rl/
 
 # Data-collection suite (requires: lerobot==0.5.1, pytest)
-cd data/collect/panthera-lerobot-collect && python -m pytest tests/
+cd plugins/panthera-lerobot-collect && python -m pytest tests/
 ```
 
 CI runs lint plus all six suites on every push (`.github/workflows/ci.yml`).

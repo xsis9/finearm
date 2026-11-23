@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # ── Panthera 机械臂 daemon 启动(驱动层,与采集/推理解耦后共用的入口)──
-# 2026-11 从 data/collect/panthera-lerobot-collect/run_panthera_lerobot_daemon.sh
-# 迁入 deploy/arm/;旧路径保留同名薄 wrapper 转发到这里,老命令不破。
+# canonical 入口:仓库根 `bash arm/panthera/run_daemon.sh …`。
+# 2026-11 目录重组:采集插件迁至 plugins/panthera-lerobot-collect,
+# 旧转发 shim run_panthera_lerobot_daemon.sh 已删除。
 set -euo pipefail
 
-ARM_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"     # = deploy/arm/panthera
-DEPLOY_ROOT="$(dirname "$(dirname -- "${ARM_ROOT}")")"             # = deploy
-COLLECT_TOOL="${DEPLOY_ROOT}/data/collect/panthera-lerobot-collect"
+ARM_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"     # = <repo>/arm/panthera
+REPO_ROOT="$(dirname "$(dirname -- "${ARM_ROOT}")")"               # = 仓库根
+COLLECT_TOOL="${REPO_ROOT}/plugins/panthera-lerobot-collect"
 
 # SDK(机械臂资产)随驱动放在本目录 sdk/ 下;克隆/校验仍由采集工具
 # scripts/init_workspace.sh 负责。
@@ -101,4 +102,4 @@ if [[ "${live}" -eq 0 ]]; then
 fi
 
 cd "${ARM_ROOT}"
-PYTHONPATH="${DEPLOY_ROOT}/src" exec "${PYTHON}" -m finearm.arms.daemon.cli "${daemon_args[@]}"
+PYTHONPATH="${REPO_ROOT}/src" exec "${PYTHON}" -m finearm.arms.daemon.cli "${daemon_args[@]}"

@@ -2,15 +2,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# 本工具位于 <deploy>/data/collect/panthera-lerobot-collect → 数据域根 = <deploy>/data。
-# 数据集、日志等落在本数据域内,与 deploy 其他目录(train/infer/models)及旧项目
-# ~/panthera、project-Embodied_AGV 完全隔离;可用环境变量逐项覆盖。
-# SDK 属机械臂资产,默认在 <deploy>/arm/panthera/sdk。
-DATA_ROOT="$(dirname "$(dirname "${ROOT_DIR}")")"
-DEPLOY_ROOT="$(dirname -- "${DATA_ROOT}")"
+# 本插件位于 <repo>/plugins/panthera-lerobot-collect → 仓库根 = 上两级。
+# 数据集落 <repo>/data/datasets(运行产物域);SDK 属机械臂资产,在
+# <repo>/arm/panthera/sdk。均可用环境变量逐项覆盖。
+REPO_ROOT="$(dirname "$(dirname -- "${ROOT_DIR}")")"
 
-export PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${DEPLOY_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"
-export PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${DATA_ROOT}/datasets}"
+export PANTHERA_SDK_ROOT="${PANTHERA_SDK_ROOT:-${REPO_ROOT}/arm/panthera/sdk/Panthera-HT_SDK}"
+export PANTHERA_DATA_ROOT="${PANTHERA_DATA_ROOT:-${REPO_ROOT}/data/datasets}"
 
 SUPPORTED_LEROBOT_VERSION="0.5.1"
 
@@ -66,7 +64,7 @@ export PATH
 
 # ROS setup scripts can prepend their own packages to PYTHONPATH. The collect
 # wrapper should import this repository and the active Python environment only.
-PYTHONPATH="${ROOT_DIR}/src"
+PYTHONPATH="${REPO_ROOT}/src"
 export PYTHONPATH
 
 collect_args=()
@@ -151,7 +149,7 @@ USAGE
 done
 
 # ── 相机预检(仅 --live;LEROBOT_COLLECT_SKIP_CAMERA_PREFLIGHT=1 可跳过) ──
-# ① 双相机状态恢复:调 deploy/utils/lock_cameras.sh(采集 & 推理共用的唯一权威
+# ① 双相机状态恢复:调 utils/lock_cameras.sh(仓库根,采集 & 推理共用的唯一权威
 #    副本)——恢复到参考数据集 bolt_test2 采集时刻的确切参数(wrist 手动曝光
 #    36/gain125,front 全 auto),逐项设置并读回验证,任一不一致即拒采,保证训练
 #    与推理的相机外观一致。UVC 控制重插/断电后复位,故每次采集前执行。
@@ -166,10 +164,10 @@ camera_preflight() {
     return 0
   fi
   echo "[preflight] wrist=${wrist} front=${front:-未找到}"
-  # 双相机锁定+验证(与推理端共用 deploy/utils/lock_cameras.sh 档案)
-  local cam_lock="${PANTHERA_CAM_LOCK:-$(dirname "${DATA_ROOT}")/utils/lock_cameras.sh}"
+  # 双相机锁定+验证(与推理端共用 utils/lock_cameras.sh 档案)
+  local cam_lock="${PANTHERA_CAM_LOCK:-${REPO_ROOT}/utils/lock_cameras.sh}"
   if [[ ! -f "${cam_lock}" ]]; then
-    echo "error: 相机锁定脚本不存在: ${cam_lock}(deploy/utils/lock_cameras.sh;可用 PANTHERA_CAM_LOCK 指定)" >&2
+    echo "error: 相机锁定脚本不存在: ${cam_lock}(utils/lock_cameras.sh;可用 PANTHERA_CAM_LOCK 指定)" >&2
     exit 2
   fi
   if ! bash "${cam_lock}"; then

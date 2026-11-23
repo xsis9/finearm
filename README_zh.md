@@ -2,19 +2,14 @@
 
 [English](README.md) · [中文](README_zh.md)
 
-机械臂 VLA 微调框架:遥操作数据采集、实时分块推理、以及在预训练 VLA 策略
-(π0.5 / Panthera-HT 臂)之上的强化学习后训练。
-
-全部代码在 `finearm` 包里;周围目录承载各机资产(SDK、标定)、环境、数据与
-LeRobot 插件包。**加一条臂 / 加一个模型适配器 / 加一个 RL 算法 = 加一个插件
-目录,其他一概不动。**
+VLA 微调框架:遥操作数据采集、微调、推理、以及强化学习后训练。
 
 ## 仓库结构
 
 | 路径 | 内容 |
 |---|---|
-| `arm/panthera/` | 本机臂资产:厂商 SDK(gitignored)、标定(`robot_param/`)、驱动环境(`init_env.sh`)、daemon 启动器(`run_daemon.sh`) |
-| `data/collect/panthera-lerobot-collect/` | LeRobot 采集栈:robot/teleoperator 插件、启动 wrapper、操作文档 |
+| `arm/panthera/` | 验证过的机械臂资产:厂商 SDK(gitignored)、标定(`robot_param/`)、驱动环境(`init_env.sh`)、daemon 启动器(`run_daemon.sh`) |
+| `plugins/panthera-lerobot-collect/` | LeRobot 采集栈:robot/teleoperator 插件、启动 wrapper、操作文档 |
 | `infer/` | 推理环境(openpi-client venv) |
 | `RL/rlt_panthera/` | RL 运行产物:campaign checkpoints/data(gitignored)与 stage-2 配置;代码在 `src/finearm/rl/` |
 | `src/finearm/core/` | 零依赖核心:四层配置解析、仓库路径、插件注册表、norm-stats 契约 |
@@ -25,7 +20,7 @@ LeRobot 插件包。**加一条臂 / 加一个模型适配器 / 加一个 RL 算
 | `models/openpi/` | vendored 的 openpi 修改版(上游 `215abfb` + panthera 补丁:`panthera_policy`、`pi05_panthera_p3` 配置、lerobot-0.5.1/numpy-2/py3.12 兼容、评估脚本);溯源见 `third_party/` |
 | `configs/` | 机器/臂/模型配置(权威副本) |
 | `third_party/` | vendored 依赖的上游基线记录 |
-| `doc/` | 工作笔记与硬件手册 |
+| `docs/` | 工作笔记与硬件手册 |
 
 ## 任意机器可运行
 
@@ -107,7 +102,7 @@ bash arm/panthera/run_daemon.sh --live \
 ```bash
 bash utils/lock_cameras.sh        # 永远第一步:相机参数必须与训练/推理一致
 
-source data/collect/panthera-lerobot-collect/.venv-lerobot/bin/activate
+source plugins/panthera-lerobot-collect/.venv-lerobot/bin/activate
 # (预检要求 lerobot-record 在 PATH 上——先激活采集 venv,或把它的 bin/
 #  目录前插到 PATH;只靠绝对路径调命令行入口是不够的)
 
@@ -120,13 +115,13 @@ finearm-collect --method teleop --live \
     --episodes 1 --episode-seconds 30 --reset-seconds 60 \
     --fps 30 --hz 1000 --camera-fourcc MJPG
 # 或用启动 wrapper(flag 相同,代管 venv):
-#   ./data/collect/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live …
+#   ./plugins/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live …
 ```
 
 数据集落在 `data/datasets/lerobot/<namespace>/<repo-id>/<时间戳>/`
 (可用 `PANTHERA_DATA_ROOT` 覆盖)。产出为 **LeRobot 原生 v3**——直接可训,
 无需转换。权威操作手册(三种采集方式、参数表、批次 SOP):
-[`data/collect/panthera-lerobot-collect/docs/quest2ros_setup.md`](data/collect/panthera-lerobot-collect/docs/quest2ros_setup.md)。
+[`plugins/panthera-lerobot-collect/docs/quest2ros_setup.md`](plugins/panthera-lerobot-collect/docs/quest2ros_setup.md)。
 
 ### 3 · 微调(外部交接)
 
@@ -268,7 +263,7 @@ python -m pytest tests/data/
 python -m pytest tests/rl/
 
 # 数据采集套件(需 lerobot==0.5.1、pytest)
-cd data/collect/panthera-lerobot-collect && python -m pytest tests/
+cd plugins/panthera-lerobot-collect && python -m pytest tests/
 ```
 
 CI 在每次 push 跑 lint 加全部六个套件(`.github/workflows/ci.yml`)。

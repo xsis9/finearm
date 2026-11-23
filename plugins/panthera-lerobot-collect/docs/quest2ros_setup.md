@@ -3,7 +3,7 @@
 > 目标:通过**主从臂(Leader-Follower)**、**手动示教(freedrive)**或 **Quest3S 右手柄遥操作**
 > 驱动 Panthera-HT 机械臂,用本工具的采集链路直接产出 **LeRobot 格式数据集**(用于模仿学习训练)。
 >
-> 机器:AU(Ubuntu 22.04,conda base 自动激活)· ROS2 Humble · 工作区 `~/quest_ws` · 本工具 `deploy/data/collect/panthera-lerobot-collect`
+> 机器:AU(Ubuntu 22.04,conda base 自动激活)· ROS2 Humble · 工作区 `~/quest_ws` · 本工具 `plugins/panthera-lerobot-collect`
 >
 > 📌 本手册是独立采集工具 **panthera-lerobot-collect** 的操作文档
 > (2026-11-10 从 project-Embodied_AGV 抽离,采集链路代码已全部包含在本目录,
@@ -67,19 +67,19 @@ quest_bridge.py(锚定式相对控制 + IK → 7 维关节目标)     │
 > **采集前第一步——固定相机参数**(三种采集方式通用,必须先跑):
 >
 > ```bash
-> bash deploy/utils/lock_cameras.sh
+> bash utils/lock_cameras.sh
 > ```
 >
 > 恢复到参考数据集 bolt_test2 采集时刻的确切参数(wrist 手动曝光 36/gain125、
 > front 全 auto)并逐项读回验证,保证采集/训练/推理相机外观一致。UVC 相机重插/
 > 断电后参数复位,**每次开采集前都要跑**;`--live` 采集的相机预检会自动再调一遍
-> (双保险)。该脚本位于 `deploy/utils/`,是采集与推理共用的唯一权威副本。
+> (双保险)。该脚本位于仓库根 `utils/`,是采集与推理共用的唯一权威副本。
 
 没有外部 daemon 时,采集 wrapper 会**自动拉起**自己的 teleop daemon(owned daemon),
 所以一条命令即可开始:
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 set -a; source .env; set +a
 ./run_panthera_lerobot_collect.sh --live \
   --leader-config arm/panthera/robot_param/Leader.yaml \
@@ -148,7 +148,7 @@ v4l2-ctl --list-devices     # 找到两个相机的 by-id 路径
 | `--teleop-gripper-feedback-scale X` | 主臂夹爪力反馈强度(默认 0.5;调小主臂更轻、能捏得更深) |
 | `--voice-prompts` | 保留 LeRobot 原生语音播报(默认关闭,改为终端蜂鸣:进 episode 两声、reset/停止一声) |
 
-**数据保存位置**:`deploy/data/datasets/lerobot/local/leader_teach_pick_cube/<YYYYMMDD_HHMMSS_ffffff_p<PID>_c<计数>/`
+**数据保存位置**:`data/datasets/lerobot/local/leader_teach_pick_cube/<YYYYMMDD_HHMMSS_ffffff_p<PID>_c<计数>/`
 (即 `${PANTHERA_DATA_ROOT}/lerobot/<namespace>/<name>/<时间戳目录>/`),结构:
 
 ```
@@ -165,9 +165,9 @@ v4l2-ctl --list-devices     # 找到两个相机的 by-id 路径
 front 相机里垫子/螺栓/螺母完整可见、腕部相机能看到工作区):
 
 ```bash
-# 终端1 · daemon 以 teleop 模式运行(用主臂带动从臂摆位姿;启动瞬间从臂跳到主臂位形,注意安全)
-cd deploy/data/collect/panthera-lerobot-collect && set -a; source .env; set +a
-./run_panthera_lerobot_daemon.sh --live \
+# 终端1 · daemon 以 teleop 模式运行(仓库根执行;用主臂带动从臂摆位姿,启动瞬间从臂跳到主臂位形,注意安全)
+# (daemon 自动定位 SDK/venv,无需 source .env;确有覆盖项时可先 set -a; source plugins/panthera-lerobot-collect/.env; set +a)
+bash arm/panthera/run_daemon.sh --live \
   --leader-config arm/panthera/robot_param/Leader.yaml \
   --follower-config arm/panthera/robot_param/Follower.yaml \
   --hz 1000 --initial-control-mode teleop
@@ -175,7 +175,7 @@ cd deploy/data/collect/panthera-lerobot-collect && set -a; source .env; set +a
 
 ```bash
 # 终端2 · 锁住当前位姿并读出关节向量(先切 hold 再读数,松开主臂不会漂)
-cd deploy/data/collect/panthera-lerobot-collect && set -a; source .env; set +a
+cd plugins/panthera-lerobot-collect && set -a; source .env; set +a
 "${PANTHERA_PYTHON}" -c "
 from panthera_lerobot_control import ControlClient
 c = ControlClient('/tmp/panthera_lerobot_control.sock')
@@ -220,7 +220,7 @@ print('夹爪:', round(state[6], 4))
 把主臂带回 HOME、6 关节偏差全部进入 ±0.05 rad 时终端响铃并显示 HOME OK):
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect && set -a; source .env; set +a
+cd plugins/panthera-lerobot-collect && set -a; source .env; set +a
 "${PANTHERA_PYTHON}" -c "
 import time
 from panthera_lerobot_control import ControlClient
@@ -285,7 +285,7 @@ while True:
 只有明确的 `--resume --dataset-root` 才会追加(否则总是新建 fresh root):
 
 ```bash
-export DATASET_ROOT=deploy/data/datasets/lerobot/local/leader_teach_pick_cube/<具体时间戳目录>
+export DATASET_ROOT=data/datasets/lerobot/local/leader_teach_pick_cube/<具体时间戳目录>
 
 ./run_panthera_lerobot_collect.sh --live \
   --camera "front=..." --camera "wrist=..." \
@@ -393,7 +393,7 @@ resume 在机械臂启动前严格校验原数据集:`repo-id`、`task`、`fps`�
 
 ```bash
 # 目录下确认 episode 数、两个相机的视频、parquet
-ls deploy/data/datasets/lerobot/local/<repo-id>/<时间戳>/videos/*/ | head
+ls data/datasets/lerobot/local/<repo-id>/<时间戳>/videos/*/ | head
 # 抽看 2-3 集视频:方向正、关键瞬间无遮挡、画面稳定
 ```
 
@@ -409,15 +409,14 @@ DAgger 阶段;**<30%** 先回来排查数据/视角/训练配置问题,不要盲
 **终端1 —— daemon 以 freedrive 模式启动**(⚠️ 启动瞬间臂变悬浮,先托住臂!):
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
-set -a; source .env; set +a
-./run_panthera_lerobot_daemon.sh --live --no-leader --hz 1000 --initial-control-mode freedrive
+# 仓库根执行(daemon 自动定位 SDK/venv,无需 source .env)
+bash arm/panthera/run_daemon.sh --live --no-leader --hz 1000 --initial-control-mode freedrive
 ```
 
 **终端2 —— 采集**(preflight 会校验 daemon 状态,freedrive 已放行):
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 set -a; source .env; set +a
 ./run_panthera_lerobot_collect.sh --live \
   --select-cameras \
@@ -436,7 +435,7 @@ daemon 侧差异见下表(此方式必须先手动起 daemon,所以是 2 个终�
 | `--initial-control-mode freedrive` | daemon 从第一个 tick 起进入重力补偿悬浮模式 |
 | `--no-park` / `--park-joints "j1,...,j6"` | 退出归位控制(默认 Ctrl+C 时从示教位姿平滑归位 ~4s 再抱闸) |
 
-**数据保存位置**:`deploy/data/datasets/lerobot/local/hand_teach_demo/<时间戳目录>/`,
+**数据保存位置**:`data/datasets/lerobot/local/hand_teach_demo/<时间戳目录>/`,
 目录结构同 1.1。**freedrive 的数据语义**:`action` 恒等于示教位姿(daemon 每帧把
 target 设为 follower 实时位姿),`observation.state` = follower 14 维实时状态。
 
@@ -459,7 +458,7 @@ target 设为 follower 实时位姿),`observation.state` = follower 14 维实时
 
 **为什么不能直接跑 SDK 的重力补偿脚本**
 (`${PANTHERA_SDK_ROOT}/panthera_python/scripts/2_gravity_friction_compensation_control.py`,
-SDK 位于 `deploy/arm/sdk/Panthera-HT_SDK`):
+SDK 位于 `arm/panthera/sdk/Panthera-HT_SDK`):
 它会绕过 daemon 独占串口(冲突),且采集链路读不到状态。正确做法是 freedrive 作为
 daemon 的第四种模式——daemon 的 `_step` 本来每 tick 就在算 `follower_torque = 重力+摩擦补偿`
 (原用于位置环前馈),freedrive 只是把同一份力矩以零增益下发,与 SDK 示例的
@@ -497,7 +496,7 @@ freedrive、holding=False、`action == observation.state[:7]` → `set_mode("hol
 ## 2.6 模式切换速查
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 set -a; source .env; set +a
 # 切 freedrive(悬浮,可手拖) / 切 hold(锁位):
 "${PANTHERA_PYTHON}" -c "from panthera_lerobot_control import ControlClient; \
@@ -531,9 +530,7 @@ Quest3S:戴上头显 → 打开 quest2ros App → IP `192.168.110.14`,端口 `10
 **终端2 —— daemon**:
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
-set -a; source .env; set +a
-./run_panthera_lerobot_daemon.sh --live --no-leader --hz 1000
+bash arm/panthera/run_daemon.sh --live --no-leader --hz 1000
 # Ctrl+C 停止时自动平滑归位到启动位形(~4s)再抱闸;--no-park 关闭 / --park-joints 指定目标
 ```
 
@@ -543,7 +540,7 @@ set -a; source .env; set +a
 conda deactivate
 source /opt/ros/humble/setup.bash
 source ~/quest_ws/install/setup.bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 set -a; source .env; set +a
 "${PANTHERA_PYTHON}" quest_bridge.py --side right \
     --socket /tmp/panthera_lerobot_control.sock \
@@ -554,7 +551,7 @@ set -a; source .env; set +a
 **终端4 —— 采集**(preflight:串口/相机/daemon 状态检查,Preview 确认后开录):
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 set -a; source .env; set +a
 ./run_panthera_lerobot_collect.sh --live \
   --select-cameras \
@@ -569,7 +566,7 @@ set -a; source .env; set +a
 daemon 侧除**不加** `--initial-control-mode freedrive` 外与第二大部分 2.1 相同
 (bridge 会在按 A 时自行 `set_mode("policy")`)。
 
-**数据保存位置**:`deploy/data/datasets/lerobot/local/quest_pick_cube/<时间戳目录>/`
+**数据保存位置**:`data/datasets/lerobot/local/quest_pick_cube/<时间戳目录>/`
 (结构同 1.1)。**Quest 方式的数据语义**:`action` = bridge IK 算出、daemon 限幅后的
 从臂关节目标,`observation.state` = follower 14 维实时状态。
 
@@ -700,8 +697,8 @@ ros2 topic hz /q2r_right_hand_pose           # 频率(~36Hz)
 ### 3.5.2 项目环境(.env + SDK + LeRobot venv)【✅ 2026-10-23 验收通过】
 
 ```bash
-cd deploy/data/collect/panthera-lerobot-collect
-cp .env.example .env          # 可选:默认零配置即可跑(SDK/数据/venv 均自动定位到 deploy/data)
+cd plugins/panthera-lerobot-collect
+cp .env.example .env          # 可选:默认零配置即可跑(SDK/数据/venv 均自动定位)
 set -a; source .env; set +a
 
 python3.12 --version          # 没有则: sudo apt install -y python3.12 python3.12-venv
@@ -715,15 +712,16 @@ python3.12 --version          # 没有则: sudo apt install -y python3.12 python
 无硬件 smoke test(不动机械臂;三种方式通用):
 
 ```bash
-# 终端1:mock daemon
-./run_panthera_lerobot_daemon.sh --mock --hz 1000
-# 终端2:检查将要执行的采集命令
+# 终端1:mock daemon(仓库根执行)
+bash arm/panthera/run_daemon.sh --mock --hz 1000
+# 终端2:检查将要执行的采集命令(插件目录执行)
+cd plugins/panthera-lerobot-collect
 ./run_panthera_lerobot_collect.sh --mock --no-cameras \
   --repo-id local/panthera_quest_smoke --task "mock smoke test" \
   --episodes 1 --episode-seconds 2 --reset-seconds 0 --print-command
 ```
 
-> 实测补充:去掉 `--print-command` 才真正录制,数据在 `deploy/data/datasets/lerobot/local/panthera_quest_smoke`。
+> 实测补充:去掉 `--print-command` 才真正录制,数据在 `data/datasets/lerobot/local/panthera_quest_smoke`。
 > 若报 `Daemon control_mode is 'hold'`,是上次残留 daemon 占了 socket:
 > `pkill -f panthera_lerobot_control.cli && rm -f /tmp/panthera_lerobot_control.sock` 后重跑。
 
@@ -731,14 +729,12 @@ python3.12 --version          # 没有则: sudo apt install -y python3.12 python
 
 ```bash
 # ========== 第1级:mock 全链路【✅ 已通过】==========
-# 终端1:mock daemon(不动硬件)
-cd deploy/data/collect/panthera-lerobot-collect
-set -a; source .env; set +a
-./run_panthera_lerobot_daemon.sh --mock --hz 1000
+# 终端1:mock daemon(不动硬件;仓库根执行)
+bash arm/panthera/run_daemon.sh --mock --hz 1000
 
 # 终端2:bridge --sim-input(合成手柄输入,无需 Quest/ROS endpoint)
 conda deactivate
-cd deploy/data/collect/panthera-lerobot-collect
+cd plugins/panthera-lerobot-collect
 set -a; source .env; set +a
 "${PANTHERA_PYTHON}" quest_bridge.py --mock --sim-input --verbose
 # 验证点:看到 "anchored"、status 行里 last_action 在变、
@@ -746,7 +742,7 @@ set -a; source .env; set +a
 
 # ========== 第2级:实机 daemon + 桥只算日志不写(验证 IK 数值合理)【✅ 已通过】==========
 # 终端1:endpoint(见 3.1)+ Quest 戴头显连接
-# 终端2:实机 daemon(./run_panthera_lerobot_daemon.sh --live --no-leader --hz 1000)
+# 终端2:实机 daemon(仓库根执行:bash arm/panthera/run_daemon.sh --live --no-leader --hz 1000)
 # 终端3:bridge --dry-run(读真 follower 关节、算 IK、打日志,不发 action)
 "${PANTHERA_PYTHON}" quest_bridge.py --side right --dry-run --verbose
 # 操作:戴头显按住 A → 小幅移动手柄 → 观察 action 数值连续、无频繁 IK failed
@@ -763,7 +759,7 @@ set -a; source .env; set +a
 
 ### quest_bridge.py 功能注记【✅ 2026-10-23 实机验收通过】
 
-> 位置:项目顶层 `deploy/data/collect/panthera-lerobot-collect/quest_bridge.py`
+> 位置:项目顶层 `plugins/panthera-lerobot-collect/quest_bridge.py`
 > (没有放进 ros2_ws —— 项目规定 ROS 栈禁止直写 daemon)
 
 - 订阅 `/q2r_right_hand_pose` 和 `/q2r_right_hand_inputs`:**实现方式**为不经 rclpy

@@ -2,34 +2,32 @@
 
 [English](README.md) · [中文](README_zh.md)
 
-Teleop data collection and its outputs: the LeRobot collection stack
-(plugins + launcher), the dataset hub (`data/datasets/`), and logs. The
-collector CODE lives in `src/finearm/data/` (entry `finearm-collect`).
-Output datasets are **LeRobot-native v3** — directly trainable, no
-conversion.
+Data-collection **outputs**: the dataset hub (`data/datasets/`) and logs.
+The collection stack (LeRobot plugins, launcher, operator manual) lives in
+`plugins/panthera-lerobot-collect/`; the collector CODE lives in
+`src/finearm/data/` (entry `finearm-collect`). Output datasets are
+**LeRobot-native v3** — directly trainable, no conversion.
 
 ## Layout
 
 ```text
 data/
-├── collect/panthera-lerobot-collect/   # collection stack: LeRobot plugins, launcher, docs, tests
-│   └── .venv-lerobot/                  # collect env (LeRobot 0.5.1)
 ├── datasets/                           # datasets land here: lerobot/<ns>/<repo-id>/<timestamp>/
-└── logs/
+└── logs/                               # daemon / diagnostics logs
 ```
 
 ## First-time setup
 
 ```bash
 # collect env (LeRobot 0.5.1 + plugins + SDK wheel; also clones/verifies the vendor SDK):
-./data/collect/panthera-lerobot-collect/scripts/init_workspace.sh --install
-./data/collect/panthera-lerobot-collect/scripts/init_workspace.sh --check     # verify
+./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --install
+./plugins/panthera-lerobot-collect/scripts/init_workspace.sh --check     # verify
 
 # driver env for the daemon (see arm/panthera/README.md):
 ./arm/panthera/init_env.sh
 
 # finearm console entries into the collect env (one-time):
-data/collect/panthera-lerobot-collect/.venv-lerobot/bin/pip install -e . --no-deps
+plugins/panthera-lerobot-collect/.venv-lerobot/bin/pip install -e . --no-deps
 ```
 
 ## Collecting (leader-follower teleop)
@@ -37,7 +35,7 @@ data/collect/panthera-lerobot-collect/.venv-lerobot/bin/pip install -e . --no-de
 ```bash
 bash utils/lock_cameras.sh        # FIRST, every batch: camera params must match training/inference
 
-source data/collect/panthera-lerobot-collect/.venv-lerobot/bin/activate
+source plugins/panthera-lerobot-collect/.venv-lerobot/bin/activate
 # (preflight requires lerobot-record on PATH — the venv must be activated)
 
 finearm-collect --method teleop --live \
@@ -49,12 +47,12 @@ finearm-collect --method teleop --live \
     --fps 30 --hz 1000 --camera-fourcc MJPG
 
 # or the launcher wrapper (same flags, manages the venv):
-#   ./data/collect/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live …
+#   ./plugins/panthera-lerobot-collect/run_panthera_lerobot_collect.sh --live …
 ```
 
 Other methods — freedrive hand-teaching, Quest3S teleop — are documented
 step-by-step in the operator manual:
-[`collect/panthera-lerobot-collect/docs/quest2ros_setup.md`](collect/panthera-lerobot-collect/docs/quest2ros_setup.md)
+[`plugins/panthera-lerobot-collect/docs/quest2ros_setup.md`](../plugins/panthera-lerobot-collect/docs/quest2ros_setup.md)
 (parameter tables, calibration values, batch SOP).
 
 ## Dataset output
