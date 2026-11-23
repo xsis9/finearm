@@ -45,8 +45,6 @@ and RL post-training.
 
 ## Adding a new arm
 
-Do these in order — every step has an existing template to copy from:
-
 1. **Daemon plugin**: create `src/finearm/arms/<arm>/` declaring `ARM_ID`,
    `PROFILE` (dims/limits/feature names), `GAINS`, and
    `make_pair`/`make_follower_only`/`make_mock_pair` (vendor-SDK adapters).
@@ -62,23 +60,13 @@ Do these in order — every step has an existing template to copy from:
 3. **Inference backend**: write your arm's version of
    `src/finearm/infer/robot_interface.py` and point `PANTHERA_ACQ_IFACE`
    at it (or set `acquisition_interface` in `configs/local.jsonc`).
-4. **Training config**: follow the four steps in [`docs/sft_zh.md`](docs/sft_zh.md)
+4. **Training config**: follow the four steps in [`docs/sft.md`](docs/sft.md)
    (policy adapter → DataConfig → CONFIGS entry → train).
 5. **Camera profile**: if the new arm's cameras differ from panthera's,
    write your own parameter-lock script and point `PANTHERA_CAM_LOCK` at it.
 
-> ⚠️ **Watch out — these mistakes never raise an error; they just silently
-> make the policy worse:**
->
-> - **Joint order**: collection / training / inference must number and
->   direction-match every joint identically;
-> - **Gripper range**: the normalization interval (e.g. 0~1.6) identical
->   in all three places;
-> - **Home pose**: collection and inference must use the same home
->   (the dataset's start pose);
-> - **Same-distribution chain**: identical camera params at training and
->   inference (lock script), norm-stats from the same dataset, `--task`
->   verbatim equal to the training prompt.
+> ⚠️ **Note**: whether the new arm's DoF count and joint space require
+> adaptation must be verified yourself.
 
 ## License
 
