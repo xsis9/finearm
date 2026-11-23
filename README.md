@@ -43,6 +43,43 @@ and RL post-training.
 | Infer | `envs/infer/` on the executor box | safety ladder in [`docs/infer.md`](docs/infer.md) |
 | RL post-training | `envs/infer/` (+ torch) | [`docs/rl.md`](docs/rl.md) |
 
+## Adding a new arm
+
+Do these in order — every step has an existing template to copy from:
+
+1. **Daemon plugin**: create `src/finearm/arms/<arm>/` declaring `ARM_ID`,
+   `PROFILE` (dims/limits/feature names), `GAINS`, and
+   `make_pair`/`make_follower_only`/`make_mock_pair` (vendor-SDK adapters).
+   Copy `mock_twojoint/` for the skeleton, `panthera_ht/` for a real one.
+   Dropped in, it is auto-discovered; bench-check with
+   `finearm-daemon --arm <arm> --mock`.
+2. **Collection plugins**: model two packages on
+   `plugins/panthera-lerobot-collect/`'s `lerobot_robot_panthera_ht`
+   (follower) and `lerobot_teleoperator_panthera_ht` (leader) — the
+   distribution name MUST equal the plugin package name.
+   Collect via `finearm-collect --method teleop --arm <arm>` (`--arm` is
+   required; the default is panthera).
+3. **Inference backend**: write your arm's version of
+   `src/finearm/infer/robot_interface.py` and point `PANTHERA_ACQ_IFACE`
+   at it (or set `acquisition_interface` in `configs/local.jsonc`).
+4. **Training config**: follow the four steps in [`docs/sft_zh.md`](docs/sft_zh.md)
+   (policy adapter → DataConfig → CONFIGS entry → train).
+5. **Camera profile**: if the new arm's cameras differ from panthera's,
+   write your own parameter-lock script and point `PANTHERA_CAM_LOCK` at it.
+
+> ⚠️ **Watch out — these mistakes never raise an error; they just silently
+> make the policy worse:**
+>
+> - **Joint order**: collection / training / inference must number and
+>   direction-match every joint identically;
+> - **Gripper range**: the normalization interval (e.g. 0~1.6) identical
+>   in all three places;
+> - **Home pose**: collection and inference must use the same home
+>   (the dataset's start pose);
+> - **Same-distribution chain**: identical camera params at training and
+>   inference (lock script), norm-stats from the same dataset, `--task`
+>   verbatim equal to the training prompt.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

@@ -41,6 +41,35 @@ VLA 微调框架:遥操作数据采集、微调、推理、以及强化学习后
 | 推理 | 执行机的 `envs/infer/` | 安全阶梯见 [`docs/infer_zh.md`](docs/infer_zh.md) |
 | RL 后训练 | `envs/infer/`(+ torch) | [`docs/rl.md`](docs/rl.md) |
 
+## 接入新机械臂
+
+按顺序做,每步都有现成模板可抄:
+
+1. **daemon 插件**:建 `src/finearm/arms/<新臂>/`,声明 `ARM_ID`、`PROFILE`
+   (维度/限位/特征名)、`GAINS`、`make_pair`/`make_follower_only`/`make_mock_pair`
+   (对接厂商 SDK)。骨架抄 `mock_twojoint/`,实体抄 `panthera_ht/`。
+   放入目录即被自动发现,`finearm-daemon --arm <新臂> --mock` 台架验证。
+2. **采集插件**:仿 `plugins/panthera-lerobot-collect/` 里的
+   `lerobot_robot_panthera_ht`(从臂)与 `lerobot_teleoperator_panthera_ht`(主臂)
+   各写一个包,**发行名必须与插件包名一致**。
+   采集入口:`finearm-collect --method teleop --arm <新臂>`(必须显式 `--arm`,
+   缺省走 panthera)。
+3. **推理后端**:仿 `src/finearm/infer/robot_interface.py` 写新臂版本,
+   `PANTHERA_ACQ_IFACE` 指向它(或写进 `configs/local.jsonc` 的
+   `acquisition_interface`)。
+4. **训练配置**:按 [`docs/sft_zh.md`](docs/sft_zh.md) 四步
+   (policy 适配 → DataConfig → CONFIGS 条目 → 开训)。
+5. **相机档案**:新臂相机与 panthera 不同时,写自己的参数锁定脚本,
+   `PANTHERA_CAM_LOCK` 指向它。
+
+> ⚠️ **注意事项——下面这些错了不会报错,只会让策略悄悄变笨:**
+>
+> - **关节顺序**:采集 / 训练 / 推理三处对同一关节的编号与方向必须一致;
+> - **夹爪范围**:归一化区间(如 0~1.6)三处一致;
+> - **归位位姿**:采集与推理必须用同一个 home(数据集开局位姿);
+> - **同分布链**:训练与推理相机参数一致(锁定脚本)、norm-stats 出自
+>   同一数据集、`--task` 与训练 prompt 逐字一致。
+
 ## 许可
 
 MIT——见 [LICENSE](LICENSE)。
