@@ -41,6 +41,4 @@ Do these four things in order:
 For command details and training problems refer to the official README:
 [`models/openpi/README.md`](../models/openpi/README.md).
 
-Checkpoints land under `checkpoints/<config>/<exp_name>/`. Per-checkpoint
-auto-evaluation: `bash scripts/watch_panthera_p3.sh` (separate terminal).
-Loss plot: `uv run python scripts/plot_panthera_p3_loss.py <train.log>`.
+Checkpoints land under `checkpoints/<config>/<exp_name>/`.

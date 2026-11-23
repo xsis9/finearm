@@ -39,6 +39,4 @@ export LEROBOT_HOME=<数据集所在目录>                # lerobot 按此解�
 命令细节与训练问题参考官方 README:
 [`models/openpi/README.md`](../models/openpi/README.md)。
 
-checkpoint 落在 `checkpoints/<配置名>/<exp_name>/`。逐 checkpoint 自动评估:
-另开终端 `bash scripts/watch_panthera_p3.sh`;loss 曲线:
-`uv run python scripts/plot_panthera_p3_loss.py <train.log>`。
+checkpoint 落在 `checkpoints/<配置名>/<exp_name>/`。
